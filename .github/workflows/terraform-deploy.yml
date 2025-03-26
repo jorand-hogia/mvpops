@@ -33,7 +33,7 @@ permissions:
   id-token: write
 
 env:
-  TF_VAR_resource_group_name: "tf-state-rg"
+  TF_VAR_resource_group_name: "tf-state-rg-mvpops"
   TF_VAR_environment: ${{ github.event.inputs.environment || 'production' }}
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
