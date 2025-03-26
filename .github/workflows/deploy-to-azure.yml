@@ -10,23 +10,9 @@ on:
         type: choice
         options:
           - production
-      image_tag:
-        description: 'Image tag to deploy'
-        required: true
-        default: 'latest'
-  
-  # Optional: Trigger on successful build
-  # workflow_run:
-  #   workflows: ["Build and Publish"]
-  #   branches: [main]
-  #   types:
-  #     - completed
 
 env:
-  ACR_NAME: mvpopsacr
   RESOURCE_GROUP: mvpops-production-rg
-  AKS_CLUSTER_NAME: mvpops-aks
-  NAMESPACE: mvpops
 
 jobs:
   deploy:
@@ -43,49 +29,19 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
-      
-      - name: Set up AKS context
-        uses: azure/aks-set-context@v3
-        with:
-          resource-group: ${{ env.RESOURCE_GROUP }}
-          cluster-name: ${{ env.AKS_CLUSTER_NAME }}
-      
-      - name: Login to ACR
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ env.ACR_NAME }}.azurecr.io
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-      
-      # Alternatively, we could use Helm or Kustomize here
-      - name: Deploy to Azure Container Instance
+      - name: Deploy to Azure Infrastructure
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            # For a more robust deployment, replace this with AKS deployment or Azure App Service
-            # This is a simplified example using Azure Container Instances
-            IMAGE_TAG=${{ github.event.inputs.image_tag || 'latest' }}
-            az container create \
-              --resource-group ${{ env.RESOURCE_GROUP }} \
-              --name mvpops-container \
-              --image ${{ env.ACR_NAME }}.azurecr.io/mvpops:${IMAGE_TAG} \
-              --registry-login-server ${{ env.ACR_NAME }}.azurecr.io \
-              --registry-username ${{ secrets.ACR_USERNAME }} \
-              --registry-password ${{ secrets.ACR_PASSWORD }} \
-              --dns-name-label mvpops-app \
-              --ports 80 \
-              --cpu 1 \
-              --memory 1.5
+            # Run Terraform deployment or other infrastructure setup
+            echo "Running Azure infrastructure deployment..."
+            # Add your infrastructure deployment commands here
       
       - name: Post-deployment verification
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            # Add health check verification
+            # Add deployment verification
             echo "Running post-deployment verification..."
             # Add your verification commands here
             
