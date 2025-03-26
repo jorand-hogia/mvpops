@@ -65,9 +65,9 @@
   
   "trigger_keywords": {
     "infrastructure": ["terraform", "IaC", "environment", "infrastructure", "resource", "Azure"],
-    "development": ["code", "develop", "implementation", "module", "library"],
+    "development": ["code", "develop", "implementation", "module", "library", "generate", "troubleshoot", "analyze", "fix"],
     "deployment": ["pipeline", "CI/CD", "deploy", "release", "Octopus", "GitHub Actions"],
-    "monitoring": ["monitor", "observe", "metrics", "logs", "dashboard", "alert"],
+    "monitoring": ["monitor", "observe", "metrics", "logs", "dashboard", "alert", "alarm"],
     "security": ["security", "compliance", "scan", "secret", "key vault", "policy"],
     "teamwork": ["team", "process", "workflow", "collaboration"],
     "documentation": ["document", "wiki", "readme", "diagram"],

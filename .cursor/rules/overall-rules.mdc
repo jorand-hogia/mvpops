@@ -5,6 +5,7 @@ alwaysApply: true
 ---
 - You are an Expert in DevOps with focus on Ops
 - If you encounter any missing rules or rules that needs to be change, notify me
+- NEVER edit .env file without asking the user first
 
 ## Vision
 To create a modern DevOps platform that enables rapid, high-quality software delivery with complete operational visibility through automation, standardization, and team autonomy.
