@@ -9,7 +9,7 @@ resource "azurerm_resource_group" "platform" {
 
 # Create a storage account for platform artifacts
 resource "azurerm_storage_account" "artifacts" {
-  name                     = "${var.prefix}artifacts${var.environment}"
+  name                     = "${var.prefix}o${var.environment}"
   resource_group_name      = azurerm_resource_group.platform.name
   location                 = azurerm_resource_group.platform.location
   account_tier             = "Standard"
