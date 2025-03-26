@@ -50,7 +50,7 @@ This plan details the specific implementation steps for each phase of the DevOps
 | CI-01 | Audit existing pipelines | Identify improvement opportunities aligned with deployment-standards | DevOps Engineer | Day 1-2 | Audit report with recommendations |
 | CI-02 | Create GitHub Actions templates | Develop standardized workflows for build, test, and publish | DevOps Engineer | Day 3-4 | Reusable workflow templates created |
 | CI-03 | Implement testing framework | Add automated tests stages with reporting to SonarQube | Test Engineer | Day 5-6 | Test framework integrated in pipeline |
-| CI-04 | Enhance Octopus integration | Improve deployment automation with Octopus Deploy API | DevOps Engineer | Day 7-8 | GitHub to Octopus integration working |
+| CI-04 | Implement CD workflows | Create GitHub Actions workflows for deployment automation | DevOps Engineer | Day 7-8 | End-to-end CI/CD with GitHub Actions working |
 | CI-05 | Implement IaC validation | Add Terraform validation with security scanning | Security Engineer | Day 9-10 | Validation steps working in pipeline |
 | **Deliverables**: CI/CD templates, Testing framework, Deployment automation, Pipeline documentation |
 
@@ -116,8 +116,8 @@ This plan details the specific implementation steps for each phase of the DevOps
 
 | Metric ID | Metric | Current | Target | Measurement Method | Tracking Frequency |
 |-----------|--------|---------|--------|-------------------|-------------------|
-| MET-01 | Deployment Frequency | Bi-weekly | 2x per week | Octopus Deploy metrics | Weekly |
-| MET-02 | Lead Time for Changes | 5-7 days | 1-2 days | GitHub + Octopus pipeline metrics | Weekly |
+| MET-01 | Deployment Frequency | Bi-weekly | 2x per week | GitHub Actions deployment metrics | Weekly |
+| MET-02 | Lead Time for Changes | 5-7 days | 1-2 days | GitHub pipeline metrics | Weekly |
 | MET-03 | Change Failure Rate | 15% | <5% | Incident reports correlated with deployments | Weekly |
 | MET-04 | MTTR | 4 hours | <1 hour | Incident resolution metrics | Monthly |
 | MET-05 | Environment Provisioning | 2-3 days | <1 hour | Automated tracking of provisioning jobs | Weekly | 
