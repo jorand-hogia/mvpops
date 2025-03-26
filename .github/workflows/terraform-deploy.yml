@@ -1,14 +1,15 @@
-name: Terraform Deploy
+name: Terraform Infrastructure Management
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
     paths:
       - 'terraform/**'
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
     paths:
       - 'terraform/**'
+  # Allow manual triggering of workflow
   workflow_dispatch:
     inputs:
       environment:
@@ -26,20 +27,19 @@ on:
 
 env:
   TF_VAR_resource_group_name: mvpops-production-rg
-  TF_VAR_environment: production
+  TF_VAR_environment: ${{ github.event.inputs.environment || 'production' }}
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  TF_VERSION: '1.0.0'
+  TF_VERSION: '1.5.0'
 
 jobs:
-  terraform:
-    name: 'Terraform'
+  validate:
+    name: 'Validate Terraform'
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'production' }}
     
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    # Use the Bash shell
     defaults:
       run:
         shell: bash
@@ -60,30 +60,165 @@ jobs:
         run: terraform fmt -check -recursive
         continue-on-error: true
 
-      - name: Terraform Init
-        id: init
-        run: terraform init -backend-config="resource_group_name=${{ env.TF_VAR_resource_group_name }}" -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT_NAME }}" -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" -backend-config="key=terraform.tfstate"
-
       - name: Terraform Validate
         id: validate
-        run: terraform validate -no-color
+        run: |
+          terraform init -backend=false
+          terraform validate -no-color
 
-      - name: Terraform Plan
-        id: plan
-        run: terraform plan -no-color
-        continue-on-error: false
-
-      - name: Terraform Security Scan
+      - name: Run tfsec
         uses: aquasecurity/tfsec-sarif-action@v0.1.0
         with:
           sarif_file: tfsec.sarif
           working_directory: terraform
-
+          
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: tfsec.sarif
 
+  plan:
+    name: 'Plan Terraform Changes'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Storage for Terraform State if needed
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            # Create resource group if it doesn't exist
+            az group create --name ${{ env.TF_VAR_resource_group_name }} --location eastus2
+            
+            # Create storage account if it doesn't exist
+            az storage account create \
+              --name ${{ secrets.TF_STORAGE_ACCOUNT_NAME }} \
+              --resource-group ${{ env.TF_VAR_resource_group_name }} \
+              --location eastus2 \
+              --sku Standard_LRS \
+              --encryption-services blob \
+              --kind StorageV2 \
+              --allow-blob-public-access false \
+              --min-tls-version TLS1_2 || true
+              
+            # Create container if it doesn't exist
+            az storage container create \
+              --name ${{ secrets.TF_CONTAINER_NAME }} \
+              --account-name ${{ secrets.TF_STORAGE_ACCOUNT_NAME }} \
+              --auth-mode login || true
+
+      - name: Terraform Init
+        id: init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" \
+            -backend-config="key=terraform.tfstate"
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        
+      - name: Archive Terraform Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-plan
+          path: terraform/tfplan
+          retention-days: 5
+
+      - name: Comment Plan on PR
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const output = require('child_process').execSync('cd terraform && terraform show -no-color tfplan').toString();
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Terraform Plan Output\n```terraform\n' + output + '\n```'
+            });
+
+  apply:
+    name: 'Apply Terraform Changes'
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
+    
+    # Use the Bash shell
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-plan
+          path: terraform
+          
+      - name: Terraform Init
+        id: init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" \
+            -backend-config="key=terraform.tfstate"
+
       - name: Terraform Apply
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true'
-        run: terraform apply -auto-approve 
+        run: terraform apply -auto-approve tfplan
+        
+      - name: Generate Terraform Documentation
+        run: |
+          # Install terraform-docs if needed
+          curl -Lo ./terraform-docs.tar.gz https://github.com/terraform-docs/terraform-docs/releases/download/v0.16.0/terraform-docs-v0.16.0-$(uname)-amd64.tar.gz
+          tar -xzf terraform-docs.tar.gz
+          chmod +x terraform-docs
+          ./terraform-docs markdown table --output-file README.md --output-mode replace ./
+
+      - name: Update Documentation in Repository
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "docs: Update Terraform documentation [skip ci]"
+          file_pattern: terraform/README.md 
