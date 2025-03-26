@@ -19,7 +19,7 @@ provider "azurerm" {
 
 # Define resource group for VMs
 resource "azurerm_resource_group" "vm_rg" {
-  name     = "mvpops-production-rg"
+  name     = "mvpops-production-rg333"
   location = var.location
   tags     = var.tags
 }

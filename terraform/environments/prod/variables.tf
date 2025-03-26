@@ -1,7 +1,7 @@
 variable "location" {
   description = "The Azure location where all resources will be created"
   type        = string
-  default     = "West Europe"
+  default     = "swedencentral"
 }
 
 variable "tags" {
