@@ -25,6 +25,12 @@ on:
         default: false
         type: boolean
 
+# Add permissions block for GitHub token
+permissions:
+  contents: write
+  pull-requests: write
+  security-events: write
+
 env:
   TF_VAR_resource_group_name: mvpops-production-rg
   TF_VAR_environment: ${{ github.event.inputs.environment || 'production' }}
@@ -73,7 +79,7 @@ jobs:
           working_directory: terraform
           
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: tfsec.sarif
 
