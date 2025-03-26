@@ -1,9 +1,7 @@
 terraform {
   backend "azurerm" {
-    # These values are passed via command line or environment variables
-    # resource_group_name  = "mvpops-production-rg"
-    # storage_account_name = "mvpopsstorageaccount"
-    # container_name       = "tfstate"
-    # key                  = "terraform.tfstate"
+    # These values will be filled in by CI/CD pipeline
+    # If running locally, use:
+    # terraform init -backend-config=backend.conf
   }
 } 

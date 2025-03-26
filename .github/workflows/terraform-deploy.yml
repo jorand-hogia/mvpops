@@ -43,6 +43,8 @@ env:
   AZURE_LOCATION: "eastus2"
   AZURE_RESOURCE_TAG_TEAM: "mvpops"
   AZURE_PRODUCTION_RG: "mvpops-production-rg"
+  TF_STORAGE_ACCOUNT_NAME: "mvpopstfstate"
+  TF_CONTAINER_NAME: "tfstate"
 
 jobs:
   verify-credentials:
@@ -164,9 +166,9 @@ jobs:
             
             # Create storage account if it doesn't exist
             az storage account create \
-              --name ${{ secrets.TF_STORAGE_ACCOUNT_NAME }} \
+              --name ${{ env.TF_STORAGE_ACCOUNT_NAME }} \
               --resource-group ${{ env.TF_VAR_resource_group_name }} \
-              --location eastus2 \
+              --location ${{ env.AZURE_LOCATION }} \
               --sku Standard_LRS \
               --encryption-services blob \
               --kind StorageV2 \
@@ -175,8 +177,8 @@ jobs:
               
             # Create container if it doesn't exist
             az storage container create \
-              --name ${{ secrets.TF_CONTAINER_NAME }} \
-              --account-name ${{ secrets.TF_STORAGE_ACCOUNT_NAME }} \
+              --name ${{ env.TF_CONTAINER_NAME }} \
+              --account-name ${{ env.TF_STORAGE_ACCOUNT_NAME }} \
               --auth-mode login || true
 
       - name: Terraform Init
@@ -184,8 +186,8 @@ jobs:
         run: |
           terraform init \
             -backend-config="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
-            -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT_NAME }}" \
-            -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" \
+            -backend-config="storage_account_name=${{ env.TF_STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"
 
       - name: Terraform Plan
@@ -259,8 +261,8 @@ jobs:
         run: |
           terraform init \
             -backend-config="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
-            -backend-config="storage_account_name=${{ secrets.TF_STORAGE_ACCOUNT_NAME }}" \
-            -backend-config="container_name=${{ secrets.TF_CONTAINER_NAME }}" \
+            -backend-config="storage_account_name=${{ env.TF_STORAGE_ACCOUNT_NAME }}" \
+            -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"
 
       - name: Terraform Apply
