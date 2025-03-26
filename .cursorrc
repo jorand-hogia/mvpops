@@ -1,0 +1,5 @@
+{
+  "promptStarters": {
+    "project": "Before responding, check project-rules.json in the repository root for project rules, task mappings, and principles."
+  }
+}

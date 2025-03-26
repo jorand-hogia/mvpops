@@ -1,0 +1,46 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+autoAttach: true
+---
+# Ops Platform Code Conventions
+
+## Platform Code Principles
+- **Reusability**: Build modular, reusable components
+- **Maintainability**: Well-documented, simple solutions
+- **Stability**: Prioritize reliability over new features
+- **Security**: Security-first approach to all code
+
+## Infrastructure as Code
+- **Terraform Format**: Standardized HCL formatting
+- **Module Structure**: Common structure for all Terraform modules
+- **Variable Naming**: Consistent pattern for variable names
+- **Documentation**: README.md required for all modules
+- **State Management**: Remote state with proper locking
+
+## Platform Source Control
+- **Commit Messages**: `type(scope): message` format
+- **Branch Names**: `feature/platform-{feature}` naming
+- **PR Requirements**: Passing tests, security scan, two approvals
+- **Versioning**: Semantic versioning for all platform code
+
+## Platform CI/CD Code
+- **Pipeline Definitions**: YAML-based pipeline definitions
+- **Script Standards**: PowerShell for Windows, Bash for Linux
+- **Variables**: Environment variables for configuration
+- **Secrets**: No secrets in pipeline code, use Key Vault references
+
+## Automation Scripts
+- **Error Handling**: Robust error handling in all scripts
+- **Logging**: Consistent logging format across all scripts
+- **Documentation**: Comment blocks for all functions
+- **Input Validation**: Validate all inputs before processing
+
+## Rules
+1. All platform infrastructure code must follow Terraform standards
+2. All platform code must include appropriate error handling
+3. All platform repositories must have CI/CD pipelines
+4. All platform code must be peer-reviewed before merge
+5. All platform automation must be tested in dev before production

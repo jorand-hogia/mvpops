@@ -1,0 +1,50 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+agentRequestable: true
+---
+# Ops Platform Monitoring Standards
+
+## Platform Metrics Collection
+- **Core Platform**: Azure Monitor for all platform metrics
+- **Platform Health**: Uptime and availability monitoring
+- **Resource Metrics**: CPU, memory, network for platform components
+- **Custom Metrics**: Performance indicators for platform services
+- **Collection Frequency**: 1-minute intervals for critical metrics
+
+## Platform Logging Framework
+- **Central Repository**: Log Analytics workspace for all platform logs
+- **Log Levels**: ERROR, WARN, INFO, DEBUG standardized across platform
+- **Structured Logging**: JSON format with standard fields
+- **Log Correlation**: Distributed tracing IDs across platform components
+- **Retention**: 30 days for operational logs, 1 year for security logs
+
+## Platform Alerting System
+- **Alert Tiers**: P1 (Critical), P2 (High), P3 (Medium), P4 (Low)
+- **SLAs**: P1: 15min, P2: 1hr, P3: 4hrs, P4: 24hrs
+- **Notifications**: Teams, Email, SMS based on severity
+- **Routing**: Alert routing to appropriate platform teams
+- **Suppression**: Maintenance window alert suppression
+
+## Platform Dashboards
+- **Platform Health**: Overall platform status dashboard
+- **Component Status**: Individual component health dashboards
+- **Resource Utilization**: Platform resource consumption dashboards
+- **Cost Monitoring**: Platform cost tracking dashboards
+- **Product Overview**: Multi-tenant product health overview
+
+## Product Team Monitoring 
+- **Self-Service**: Product teams can create custom dashboards
+- **Onboarding**: Automated monitoring onboarding for products
+- **Quotas**: Resource allocation for product monitoring
+- **Integration**: Product-specific metrics integration
+- **Isolation**: Cross-product monitoring data isolation
+
+## Rules
+1. All platform services must emit standard health metrics
+2. All platform components must integrate with central logging
+3. All critical platform services must have defined alerts and SLOs
+4. All platform incidents must have associated metrics for post-mortem
+5. All platform monitoring data must be retained according to retention policy 

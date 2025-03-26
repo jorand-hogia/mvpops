@@ -1,0 +1,46 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+autoAttach: true
+---
+# Ops Platform Deployment Standards
+
+## Platform CI Pipeline
+- **Source Control**: GitHub for all platform code
+- **Branch Protection**: Required reviews for main branch
+- **Build Automation**: GitHub Actions for platform components
+- **Testing**: Automated unit, integration, and infrastructure tests
+- **Artifact Publication**: Azure Container Registry for platform images
+
+## Platform CD Pipeline
+- **Deployment Tool**: Octopus Deploy for platform components
+- **Environment Progression**: Dev → Staging → Production
+- **Approval Process**: Automated for Dev, manual for Production
+- **Rollback Capability**: All platform deployments must support rollback
+
+## Platform Release Management
+- **Release Cadence**: Bi-weekly platform updates
+- **Change Records**: All platform changes documented
+- **Change Windows**: Platform updates during defined maintenance windows
+- **Versioning**: Semantic versioning for platform components
+
+## Platform Deployment Patterns
+- **Blue/Green**: For zero-downtime platform upgrades
+- **Infrastructure**: Apply infrastructure changes before service changes
+- **Validation**: Automated post-deployment validation
+- **Incremental**: Staged rollout for critical platform components
+
+## Platform Templates
+- **Product Onboarding**: Templates for product team onboarding
+- **Environment Creation**: Standardized environment creation process
+- **Resource Provisioning**: Self-service resource provisioning templates
+- **Pipeline Templates**: Reusable CI/CD templates for product teams
+
+## Rules
+1. All platform code changes must pass automated tests before deployment
+2. All platform production deployments must have manual approval
+3. All platform deployments must have a documented rollback plan
+4. All platform changes must be tracked in change management
+5. All platform component versions must follow semantic versioning 

@@ -1,0 +1,44 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+autoAttach: true
+---
+# Ops Platform Architecture Standards
+
+## Platform Environment Structure
+- **Subscription Organization**: Dedicated subscription for ops platform
+- **Resource Groups**: Organized by platform component type
+- **Tagging**: All platform resources must have owner, cost-center, and application tags
+
+## Platform Network Architecture
+- **VNet Design**: Hub-and-spoke network topology, platform in hub
+- **Peering**: Product environments connect via VNet peering
+- **Subnets**: Segregated by platform function (registry, monitoring, security)
+- **NSGs**: Defined at subnet level with principle of least privilege
+
+## Platform Service Architecture
+- **Containerization**: All platform services deployed as Docker containers
+- **Service Discovery**: Azure DNS for internal service discovery
+- **State Management**: Stateless services with state in managed services
+- **Scalability**: Auto-scaling configured for platform components
+
+## Platform Integration Architecture
+- **API Gateway**: Central entry point for platform APIs
+- **Event Bus**: Azure Event Grid for platform notifications
+- **Webhooks**: Standardized webhook format for integrations
+- **Authentication**: Unified authentication for platform access
+
+## Data Architecture
+- **Metrics Storage**: Azure Monitor for metrics
+- **Log Storage**: Log Analytics for centralized logs
+- **Artifact Storage**: Azure Blob Storage for platform artifacts
+- **Backup Storage**: Geo-redundant storage for platform backups
+
+## Rules
+1. All platform components must follow the defined environment structure
+2. All platform services must connect through the hub-spoke network model
+3. All platform services must be designed for high availability
+4. All platform state must be stored in managed Azure services
+5. All platform components must be documented in architecture diagrams

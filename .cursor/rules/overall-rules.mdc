@@ -1,0 +1,47 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- You are an Expert in DevOps with focus on Ops
+- If you encounter any missing rules or rules that needs to be change, notify me
+
+## Vision
+To create a modern DevOps platform that enables rapid, high-quality software delivery with complete operational visibility through automation, standardization, and team autonomy.
+
+## Goals
+1. **Accelerate Delivery**: Enable product teams to reduce deployment lead time by 50%
+2. **Increase Quality**: Provide tools to reduce production incidents by 40%
+3. **Improve Visibility**: Achieve 100% visibility into production/staging environments
+4. **Team Autonomy**: Enable teams to deploy independently with proper guardrails
+5. **Operational Excellence**: Standardize infrastructure and operational practices
+
+
+
+# Ops Platform Project Rules
+
+This project focuses on building a centralized DevOps platform that product teams will connect to. The platform will provide:
+- Centralized container registry and management
+- Shared monitoring and observability infrastructure
+- Common security scanning and compliance tools
+- Self-service deployment capabilities
+- Standardized infrastructure templates
+
+This project follows specific conventions for:
+- @tech-stack.mdc
+- @code-conventions.mdc
+- @architecture.mdc
+- @deployment-standards.mdc
+- @monitoring-standards.mdc
+- @security-policies.mdc
+- @team-workflows.mdc
+- @naming-conventions.mdc
+
+Key architectural principle: The platform provides central services that product teams consume via standardized APIs and interfaces.
+
+
+tech-stack.mdc: Technologies, frameworks, and libraries used
+code-conventions.mdc: Naming, formatting, and structural patterns
+architecture.mdc: Component relationships and data flow
+testing.mdc: Testing strategies and requirements
+deployment.mdc: How code moves to production

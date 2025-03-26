@@ -1,0 +1,52 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+agentRequestable: true
+---
+# Ops Platform Team Workflows
+
+## Platform Development Process
+- **Methodology**: Agile Scrum with 2-week sprints
+- **Ceremonies**: Daily standups, sprint planning, retrospectives
+- **Backlog Management**: JIRA for platform enhancements/issues
+- **Prioritization**: Platform stability and security take precedence
+
+## Platform Code Management
+- **Branching Strategy**: GitHub Flow (feature branches → main)
+- **Pull Requests**: Required for all platform code changes
+- **Code Reviews**: Minimum 2 reviewer approvals for platform code
+- **Automated Checks**: PR validation with automated tests
+
+## Platform Incident Management
+- **On-call Rotation**: 24/7 coverage for platform services
+- **Incident Tiers**: P1-P4 based on platform impact
+- **Response Protocol**: Acknowledge → Mitigate → Resolve → Review
+- **Post-mortems**: Required for all P1/P2 platform incidents
+
+## Platform Change Management
+- **Change Types**: Standard, Emergency, and Maintenance
+- **Approval Flow**: Technical review → Security review → Final approval
+- **Documentation**: All platform changes documented in change log
+- **Notification**: Product teams notified of platform changes
+
+## Product Team Support
+- **Onboarding**: Standardized product team onboarding process
+- **Self-Service**: Documentation for product team self-service
+- **Office Hours**: Regular platform team office hours
+- **Support Tiers**: Standard and expedited support paths
+- **Knowledge Base**: Maintained documentation and FAQ
+
+## Communication
+- **Internal**: Teams for platform team collaboration
+- **External**: Email for formal communication with product teams
+- **Announcements**: Release notes for platform changes
+- **Documentation**: Confluence for platform documentation
+
+## Rules
+1. All platform changes must follow the defined development workflow
+2. All platform incidents must be handled according to severity
+3. All platform changes must be communicated to affected product teams
+4. All platform documentation must be kept current
+5. All product team onboarding must follow the standard process 

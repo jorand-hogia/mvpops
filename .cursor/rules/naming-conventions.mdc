@@ -1,0 +1,52 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+autoAttach: true
+---
+# Ops Platform Naming Conventions
+
+## Platform Azure Resources
+- **Pattern**: `{env}-platform-{resource-type}-{instance}`
+- **Environment**: `dev`, `stg`, `prod`
+- **Examples**:
+  - `prod-platform-acr-001` (Container Registry)
+  - `dev-platform-kv-main` (Key Vault)
+  - `stg-platform-monitor-001` (Monitoring)
+
+## Platform Network Resources
+- **VNet Pattern**: `{env}-platform-vnet`
+- **Subnet Pattern**: `{env}-platform-{purpose}-subnet`
+- **Examples**:
+  - `prod-platform-vnet`
+  - `prod-platform-services-subnet`
+  - `prod-platform-management-subnet`
+
+## Platform GitHub Repositories
+- **Ops Tools**: `ops-platform-{tool-name}`
+- **Infrastructure**: `ops-platform-infrastructure`
+- **Templates**: `ops-platform-templates-{type}`
+- **Examples**:
+  - `ops-platform-infrastructure`
+  - `ops-platform-templates-aci`
+  - `ops-platform-monitoring`
+
+## Platform Docker Images
+- **Pattern**: `platform/{service-name}:{version}`
+- **Examples**:
+  - `platform/monitoring-agent:1.2.0`
+  - `platform/deployment-tool:2.0.1`
+
+## Platform Terraform Resources
+- **Module Names**: `platform-{resource-type}`
+- **Workspace Names**: `platform-{env}`
+- **Variable Names**: `platform_{resource}_{purpose}`
+- **Output Names**: `platform_{resource}_{output}`
+
+## Rules
+1. All platform resources must follow the defined naming patterns
+2. All platform environments must use consistent naming across resources
+3. All platform Terraform modules must use the platform- prefix
+4. All platform Docker images must use the platform/ repository in ACR
+5. All platform resource names must use lowercase and hyphens 

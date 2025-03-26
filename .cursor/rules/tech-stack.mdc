@@ -1,0 +1,44 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+autoAttach: true
+---
+# Technology Stack for Ops Platform
+
+## Cloud Platform
+- **Azure**: Primary cloud platform for all platform infrastructure
+- **Azure Resource Manager**: For resource provisioning and management
+- **Azure Container Registry (ACR)**: Central Docker image repository
+
+## Monitoring & Management
+- **Azure Monitor**: Central monitoring solution for all environments
+- **Log Analytics**: Central logging repository
+- **Application Insights**: Application performance monitoring
+- **Grafana**: Dashboard visualization layer on Azure data
+
+## Infrastructure
+- **Terraform**: All platform infrastructure defined as code (v1.0+)
+- **Docker**: Containerization standard for all platform services
+- **Azure Key Vault**: Centralized secret management
+- **Azure Policy**: For governance enforcement
+
+## CI/CD Infrastructure
+- **GitHub**: Source code repository for infrastructure code
+- **GitHub Actions**: CI pipeline automation for platform components
+- **Octopus Deploy**: CD orchestration for deployment targets
+- **SonarQube**: Central code quality scanning service
+
+## Platform Services 
+- **Azure Container Instances**: For ops platform tools
+- **Virtual Network**: Hub-spoke network architecture
+- **Azure Storage**: For platform artifacts and backups
+- **Azure SQL**: For platform service databases
+
+## Rules
+1. All platform infrastructure must be defined as Terraform code
+2. All platform services must be containerized with Docker
+3. All platform CI/CD must use GitHub Actions and Octopus Deploy
+4. All platform secrets must be stored in Azure Key Vault
+5. All platform components must emit monitoring data to Azure Monitor

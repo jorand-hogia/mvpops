@@ -1,0 +1,62 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+alwaysApply: true
+---
+# Security Policies
+
+## Authentication & Authorization
+- **Identity Provider**: Azure AD for all authentication
+- **Authorization Model**: Role-Based Access Control (RBAC)
+- **MFA**: Required for all administrative access
+- **Service Principals**: Managed identities for service-to-service auth
+- **Least Privilege**: Implement just-enough-access for all roles
+- **Access Reviews**: Quarterly review of all access permissions
+
+## Network Security
+- **TLS**: Minimum TLS 1.2 for all communications
+- **Encryption**: All data in transit and at rest must be encrypted
+- **VPN**: Required for administrative access to production
+- **WAF**: Azure Front Door WAF for public endpoints
+- **Private Endpoints**: Use for all PaaS services where available
+- **NSG Flow Logs**: Enable for all network security groups
+- **DDoS Protection**: Azure DDoS Protection Standard for public endpoints
+
+## Security Scanning
+- **Container Scanning**: At build time and regularly in registry
+- **Code Scanning**: Static analysis with SonarQube
+- **Dependency Scanning**: For vulnerable packages
+- **Compliance Scanning**: Against CIS benchmarks
+- **Infrastructure Scanning**: Terraform plans scanned for security issues
+- **Penetration Testing**: Annual testing for critical services
+- **Secrets Scanning**: Pre-commit hooks to prevent secret leakage
+
+## Secret Management
+- **Key Vault**: All secrets stored in Azure Key Vault
+- **Rotation**: 90-day rotation for all secrets
+- **Access Logs**: All secret access must be logged
+- **No Hardcoding**: No secrets in code or configuration files
+- **Certificate Management**: Automated certificate rotation
+- **Just-in-time Access**: Temporary elevated access for management tasks
+- **Audit Trail**: All secret access must maintain detailed audit trail
+
+## Compliance & Governance
+- **Security Baselines**: Enforce Azure Security Baseline
+- **Policy Compliance**: Azure Policy for automated compliance reporting
+- **Resource Tagging**: Required security classification tags
+- **GDPR Compliance**: Data classification for personal information
+- **Security Center**: Azure Defender enabled for all subscriptions
+
+## Rules
+1. All services must use Azure AD for authentication
+2. All communications must use TLS 1.2 or higher
+3. All containers must pass security scanning before deployment
+4. All secrets must be stored in Azure Key Vault
+5. All security incidents must be reported within 24 hours
+6. All production access requires MFA
+7. All API endpoints must implement rate limiting
+8. All infrastructure must be deployed from secured templates
+9. All user access must follow just-enough-access principles
+10. All security logs must be retained for at least 1 year 

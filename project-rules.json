@@ -1,0 +1,93 @@
+{
+  "project": "DevOps MVP Platform",
+  "version": "1.0",
+  "description": "Central configuration for DevOps platform project rules",
+  "auto_load": true,
+  
+  "rule_files": {
+    "tech-stack": {
+      "path": ".cursor/rules/tech-stack.mdc",
+      "description": "Technologies, frameworks, and libraries used",
+      "priority": "high"
+    },
+    "code-conventions": {
+      "path": ".cursor/rules/code-conventions.mdc",
+      "description": "Naming, formatting, and structural patterns",
+      "priority": "high"
+    },
+    "architecture": {
+      "path": ".cursor/rules/architecture.mdc",
+      "description": "Component relationships and data flow",
+      "priority": "high"
+    },
+    "deployment-standards": {
+      "path": ".cursor/rules/deployment-standards.mdc",
+      "description": "How code moves to production",
+      "priority": "high"
+    },
+    "monitoring-standards": {
+      "path": ".cursor/rules/monitoring-standards.mdc",
+      "description": "Observability requirements and implementation",
+      "priority": "high"
+    },
+    "security-policies": {
+      "path": ".cursor/rules/security-policies.mdc",
+      "description": "Security requirements and practices",
+      "priority": "high"
+    },
+    "team-workflows": {
+      "path": ".cursor/rules/team-workflows.mdc",
+      "description": "Team processes and collaboration patterns",
+      "priority": "medium"
+    },
+    "naming-conventions": {
+      "path": ".cursor/rules/naming-conventions.mdc",
+      "description": "Standardized naming patterns",
+      "priority": "medium"
+    },
+    "overall-rules": {
+      "path": ".cursor/rules/overall-rules.mdc",
+      "description": "Overall project vision and rules",
+      "priority": "high"
+    }
+  },
+  
+  "task_rule_mapping": {
+    "infrastructure": ["tech-stack", "architecture", "naming-conventions", "security-policies"],
+    "development": ["code-conventions", "tech-stack", "security-policies"],
+    "deployment": ["deployment-standards", "monitoring-standards", "security-policies"],
+    "monitoring": ["monitoring-standards", "architecture"],
+    "security": ["security-policies", "architecture"],
+    "teamwork": ["team-workflows"],
+    "documentation": ["code-conventions", "architecture"],
+    "naming": ["naming-conventions"]
+  },
+  
+  "trigger_keywords": {
+    "infrastructure": ["terraform", "IaC", "environment", "infrastructure", "resource", "Azure"],
+    "development": ["code", "develop", "implementation", "module", "library"],
+    "deployment": ["pipeline", "CI/CD", "deploy", "release", "Octopus", "GitHub Actions"],
+    "monitoring": ["monitor", "observe", "metrics", "logs", "dashboard", "alert"],
+    "security": ["security", "compliance", "scan", "secret", "key vault", "policy"],
+    "teamwork": ["team", "process", "workflow", "collaboration"],
+    "documentation": ["document", "wiki", "readme", "diagram"],
+    "naming": ["naming", "convention", "standard"]
+  },
+  
+  "global_principles": [
+    "The platform provides central services that product teams consume via standardized APIs and interfaces",
+    "Team autonomy with proper guardrails",
+    "Standardized infrastructure and operational practices",
+    "Complete operational visibility through automation"
+  ],
+  
+  "project_goals": {
+    "delivery_acceleration": "Reduce deployment lead time by 50%",
+    "quality_improvement": "Reduce production incidents by 40%",
+    "visibility": "Achieve 100% visibility into production/staging environments",
+    "team_autonomy": "Enable teams to deploy independently with proper guardrails",
+    "operational_excellence": "Standardize infrastructure and operational practices"
+  },
+  
+  "instruction_template": "Before implementing any solution, check the relevant rule sets based on the task type. For {task_type} tasks, refer to these rule sets: {rule_sets}. Remember the key principle: {principle}"
+} 
