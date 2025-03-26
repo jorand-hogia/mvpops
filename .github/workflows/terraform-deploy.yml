@@ -265,6 +265,11 @@ jobs:
             -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"
 
+      - name: Import Existing Resource Group
+        run: |
+          terraform import azurerm_resource_group.platform "/subscriptions/$ARM_SUBSCRIPTION_ID/resourceGroups/mvpops-production-rg"
+        working-directory: ./terraform
+
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
         
