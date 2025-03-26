@@ -41,8 +41,42 @@ env:
   TF_VERSION: '1.5.0'
 
 jobs:
+  verify-credentials:
+    name: 'Verify Azure Credentials'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Azure Environment Variables
+        run: |
+          if [ -n "$ARM_CLIENT_ID" ]; then
+            echo "ARM_CLIENT_ID exists and is set"
+            echo "First 4 characters: ${ARM_CLIENT_ID:0:4}..."
+          else
+            echo "ARM_CLIENT_ID is not set! ❌"
+          fi
+          
+          if [ -n "$ARM_CLIENT_SECRET" ]; then
+            echo "ARM_CLIENT_SECRET exists and is set (value masked)"
+          else
+            echo "ARM_CLIENT_SECRET is not set! ❌"
+          fi
+          
+          if [ -n "$ARM_SUBSCRIPTION_ID" ]; then
+            echo "ARM_SUBSCRIPTION_ID exists and is set"
+            echo "Value with middle masked: ${ARM_SUBSCRIPTION_ID:0:4}...${ARM_SUBSCRIPTION_ID: -4}"
+          else
+            echo "ARM_SUBSCRIPTION_ID is not set! ❌"
+          fi
+          
+          if [ -n "$ARM_TENANT_ID" ]; then
+            echo "ARM_TENANT_ID exists and is set"
+            echo "Value with middle masked: ${ARM_TENANT_ID:0:4}...${ARM_TENANT_ID: -4}"
+          else
+            echo "ARM_TENANT_ID is not set! ❌"
+          fi
+
   validate:
     name: 'Validate Terraform'
+    needs: verify-credentials
     runs-on: ubuntu-latest
     
     # Use the Bash shell
@@ -97,6 +131,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Verify Azure Credentials for Plan
+        run: |
+          echo "Using AZURE_SUBSCRIPTION_ID: ${ARM_SUBSCRIPTION_ID:0:4}...${ARM_SUBSCRIPTION_ID: -4}"
+          echo "Using AZURE_TENANT_ID: ${ARM_TENANT_ID:0:4}...${ARM_TENANT_ID: -4}"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -185,6 +224,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Verify Azure Credentials for Apply
+        run: |
+          echo "Using AZURE_SUBSCRIPTION_ID: ${ARM_SUBSCRIPTION_ID:0:4}...${ARM_SUBSCRIPTION_ID: -4}"
+          echo "Using AZURE_TENANT_ID: ${ARM_TENANT_ID:0:4}...${ARM_TENANT_ID: -4}"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
