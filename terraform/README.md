@@ -1,80 +1,83 @@
 # DevOps MVP Platform - Terraform Infrastructure
 
-This directory contains the Terraform code for provisioning and managing the DevOps MVP Platform infrastructure on Azure.
+This directory contains the Terraform code for managing Azure resources for the DevOps MVP Platform.
 
-## Infrastructure Components
+## Structure
 
-The Terraform code provisions the following Azure resources:
+- `modules/` - Reusable Terraform modules
+  - `azure-vm/` - Module for creating Azure virtual machines with standardized configuration
+  
+- `environments/` - Environment-specific configurations
+  - `dev/` - Development environment
+  - `prod/` - Production environment
 
-- Resource Group for organizing all platform resources
-- Storage Account for platform artifacts
-- Azure Container Registry (ACR) for container images
-- Key Vault for secrets management
-- Log Analytics Workspace for centralized logging
-- Azure Monitor Action Group for alerting
+## Prerequisites
 
-## Usage
-
-### Prerequisites
-
-- [Terraform](https://www.terraform.io/downloads.html) version 1.0.0 or later
+- Terraform v1.0.0 or newer
 - Azure CLI installed and authenticated
-- Appropriate Azure permissions
+- Storage account for Terraform state (already configured in the environment configs)
 
-### Local Development
+## Getting Started
 
-1. Initialize the Terraform working directory:
+1. Navigate to the environment directory you want to work with:
+
+```bash
+cd environments/prod
+```
+
+2. Create a `terraform.tfvars` file (you can use the provided example):
+
+```bash
+cp terraform.tfvars.example terraform.tfvars
+```
+
+3. Edit the `terraform.tfvars` file with your specific values:
+   - Update the `vm_ssh_public_key` with your actual SSH public key
+   - Adjust any other variables as needed for your environment
+
+4. Initialize Terraform to download required providers and set up the backend:
 
 ```bash
 terraform init
 ```
 
-2. Create a plan to preview changes:
+5. Create a plan to review the changes:
 
 ```bash
 terraform plan -out=tfplan
 ```
 
-3. Apply the changes:
+6. Apply the changes:
 
 ```bash
 terraform apply tfplan
 ```
 
-### CI/CD Pipeline
+## VM Management
 
-The infrastructure is managed through the GitHub Actions workflow defined in `.github/workflows/terraform-deploy.yml`.
+This configuration will create:
 
-The workflow:
-- Validates Terraform code
-- Plans changes
-- Applies changes after approval (manual workflow) or on merge to main (automated)
+- CI/CD Agent VMs (Standard_D4s_v3, Linux)
+- Monitoring VMs (Standard_E4s_v3, Linux)
+- Management VMs (Standard_B2ms, Linux)
 
-## Variables
+All VMs have:
+- Azure Monitor agents installed
+- Boot diagnostics enabled
+- Standardized tagging
+- Appropriate security configurations
 
-| Name | Description | Default |
-|------|-------------|---------|
-| prefix | Prefix for resource names | mvpops |
-| environment | Environment name | production |
-| resource_group_name | Resource group name | mvpops-production-rg |
-| location | Azure region | eastus2 |
-| tenant_id | Azure AD tenant ID | Required |
-| alert_email | Email for alerts | devops@example.com |
+## Adding New VM Types
 
-## Outputs
+To add a new VM type:
 
-The Terraform code outputs the names and IDs of the provisioned resources for reference in other parts of the system.
-
-## Security Considerations
-
-- Key Vault is configured with RBAC
-- Container Registry with Premium SKU for enhanced security features
-- Default TLS 1.2 enforcement
-- Resource logs are sent to Log Analytics
+1. Create a new module instance in the environment's `main.tf` file
+2. Configure the appropriate variables in `variables.tf` and `terraform.tfvars`
+3. Add any outputs needed in `outputs.tf`
 
 ## Best Practices
 
-- All infrastructure is defined as code
-- Resources are tagged consistently
-- State is stored remotely in Azure Storage
-- Secrets are never stored in the code repository 
+- Always use the provided modules to ensure standardization
+- Apply consistent tagging for all resources
+- Use the variables to control VM counts instead of duplicating code
+- Keep sensitive information in encrypted files or Azure Key Vault 

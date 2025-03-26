@@ -13,15 +13,15 @@ This plan details the specific implementation steps for each phase of the DevOps
 | AZ-04 | Set up RBAC model | Define roles and access controls based on least privilege principle | Security Engineer | Day 6-8 | RBAC model documented and implemented |
 | **Deliverables**: Resource groups structure, Governance policies, RBAC documentation, Terraform templates |
 
-### 2. Central Azure Container Registry
+### 2. Central Resource Management
 | Task ID | Task | Description | Responsible | Timeline | Success Criteria |
 |---------|------|-------------|-------------|----------|------------------|
-| ACR-01 | Deploy ACR | Create Premium tier Azure Container Registry using Terraform | DevOps Engineer | Day 1-2 | ACR deployed with proper configuration |
-| ACR-02 | Configure geo-replication | Set up replication for high availability in secondary regions | DevOps Engineer | Day 3 | Geo-replication enabled and validated |
-| ACR-03 | Implement vulnerability scanning | Configure Defender for Cloud for container image scanning | Security Engineer | Day 4-5 | Scanning enabled with alert policies |
-| ACR-04 | Create retention policies | Set up automatic cleanup of unused images with retention rules | DevOps Engineer | Day 6 | Policies created and tested |
-| ACR-05 | Integrate with GitHub Actions | Update GitHub workflows to use central registry with authentication | DevOps Engineer | Day 7-8 | Working integration with test workflow |
-| **Deliverables**: Functional ACR, Security scanning reports, GitHub integration documentation, IaC templates |
+| RES-01 | Deploy Resource Management System | Create central resource management using Terraform | DevOps Engineer | Day 1-2 | Resource management deployed with proper configuration |
+| RES-02 | Configure high availability | Set up redundancy for high availability in secondary regions | DevOps Engineer | Day 3 | HA configuration enabled and validated |
+| RES-03 | Implement security scanning | Configure Defender for Cloud for resource scanning | Security Engineer | Day 4-5 | Scanning enabled with alert policies |
+| RES-04 | Create resource policies | Set up resource governance with policy rules | DevOps Engineer | Day 6 | Policies created and tested |
+| RES-05 | Integrate with GitHub Actions | Update GitHub workflows to use central resource management | DevOps Engineer | Day 7-8 | Working integration with test workflow |
+| **Deliverables**: Resource management system, Security scanning reports, GitHub integration documentation, IaC templates |
 
 ### 3. Infrastructure as Code Repository
 | Task ID | Task | Description | Responsible | Timeline | Success Criteria |
@@ -82,7 +82,7 @@ This plan details the specific implementation steps for each phase of the DevOps
 |---------|------|-------------|-------------|----------|------------------|
 | OPT-01 | Deploy cost management | Implement Azure Cost Management with budgets and alerts | Finance Analyst | Day 1-2 | Cost tracking dashboards available |
 | OPT-02 | Configure auto-scaling | Set up scaling rules for key services based on metrics | DevOps Engineer | Day 3-4 | Auto-scaling rules implemented and tested |
-| OPT-03 | Optimize containerization | Improve container deployment patterns with health checks | DevOps Engineer | Day 5-6 | Optimized container configurations available |
+| OPT-03 | Optimize resource utilization | Improve resource allocation with efficient configurations | DevOps Engineer | Day 5-6 | Optimized resource configurations available |
 | OPT-04 | Implement DR plans | Create disaster recovery automation with defined RTO/RPO | Cloud Architect | Day 7-8 | DR plans documented and automation tested |
 | **Deliverables**: Cost optimization report, Scaling configurations, DR documentation, Recovery automation scripts |
 

@@ -7,10 +7,10 @@
    - Implement Azure Policies for governance
    - Configure Azure RBAC and permissions model
 
-2. **Central Container Registry**
-   - Create shared Container Registry for all Docker images, use Harbor
+2. **Central Resource Management**
+   - Configure resource-level monitoring and governance
    - Integrate with existing GitHub workflows
-   - Configure image scanning and retention policies
+   - Implement security scanning and compliance policies
 
 3. **Infrastructure as Code Repository**
    - Create Terraform repository in GitHub
@@ -50,7 +50,7 @@
 8. **Infrastructure Optimization**
    - Implement cost management tools
    - Create auto-scaling configurations
-   - Optimize container orchestration
+   - Optimize resource utilization
    - Set up disaster recovery plans
 
 9. **DevOps Maturity**
@@ -72,3 +72,9 @@
 - **Management Services**: B2ms (2 vCPUs, 8GB RAM)
 
 Before proceeding, please check project-rules.json in the repository root and follow the rules defined there. 
+
+- Create centralized monitoring with Azure Monitor and Application Insights
+- Create environment infrastructure as code using Terraform
+- Automate environment provisioning with GitHub Actions
+- Set up central identity management with Azure AD
+- Configure central key management with Azure Key Vault 

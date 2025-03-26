@@ -19,7 +19,7 @@ variable "resource_group_name" {
 variable "location" {
   description = "Azure region to deploy resources"
   type        = string
-  default     = "eastus2"
+  default     = "swedencentral"
 }
 
 variable "tenant_id" {
