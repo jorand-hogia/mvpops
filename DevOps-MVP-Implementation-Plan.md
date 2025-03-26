@@ -8,7 +8,7 @@ This plan details the specific implementation steps for each phase of the DevOps
 | Task ID | Task | Description | Responsible | Timeline | Success Criteria |
 |---------|------|-------------|-------------|----------|------------------|
 | AZ-01 | Define resource naming convention | Create standardized naming for all Azure resources following naming-conventions standards | Azure Cloud Architect | Day 1-2 | Documented naming scheme aligned with naming-conventions.mdc |
-| AZ-02 | Create Resource Groups | Deploy dev/staging/prod resource groups using Terraform | DevOps Engineer | Day 3 | Resource groups deployed with proper tagging |
+| AZ-02 | Create Resource Groups | Deploy production resource groups using Terraform | DevOps Engineer | Day 3 | Resource groups deployed with proper tagging |
 | AZ-03 | Configure Azure Policy | Implement compliance policies for resource creation and security standards | Security Engineer | Day 4-5 | Policies aligned with security-policies.mdc |
 | AZ-04 | Set up RBAC model | Define roles and access controls based on least privilege principle | Security Engineer | Day 6-8 | RBAC model documented and implemented |
 | **Deliverables**: Resource groups structure, Governance policies, RBAC documentation, Terraform templates |
@@ -37,7 +37,7 @@ This plan details the specific implementation steps for each phase of the DevOps
 ### 4. Monitoring Stack
 | Task ID | Task | Description | Responsible | Timeline | Success Criteria |
 |---------|------|-------------|-------------|----------|------------------|
-| MON-01 | Deploy Azure Monitor | Configure base monitoring for all environments via Terraform | DevOps Engineer | Day 1-2 | Azure Monitor deployed in all environments |
+| MON-01 | Deploy Azure Monitor | Configure base monitoring for production environment via Terraform | DevOps Engineer | Day 1-2 | Azure Monitor deployed in production environment |
 | MON-02 | Set up Application Insights | Create App Insights resources with proper sampling rates | App Support Engineer | Day 3-4 | App Insights configured with SDKs |
 | MON-03 | Configure Log Analytics | Deploy workspace with data collection rules per monitoring-standards | DevOps Engineer | Day 5-6 | Log Analytics collecting from all sources |
 | MON-04 | Implement Grafana | Deploy managed Grafana instance with Azure AD authentication | DevOps Engineer | Day 7-8 | Grafana accessible with proper permissions |

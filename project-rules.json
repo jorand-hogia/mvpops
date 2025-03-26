@@ -84,7 +84,7 @@
   "project_goals": {
     "delivery_acceleration": "Reduce deployment lead time by 50%",
     "quality_improvement": "Reduce production incidents by 40%",
-    "visibility": "Achieve 100% visibility into production/staging environments",
+    "visibility": "Achieve 100% visibility into production environment",
     "team_autonomy": "Enable teams to deploy independently with proper guardrails",
     "operational_excellence": "Standardize infrastructure and operational practices"
   },
