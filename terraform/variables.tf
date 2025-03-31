@@ -25,7 +25,6 @@ variable "location" {
 variable "tenant_id" {
   description = "Azure AD tenant ID"
   type        = string
-  default     = "00000000-0000-0000-0000-000000000000"
 }
 
 variable "alert_email" {

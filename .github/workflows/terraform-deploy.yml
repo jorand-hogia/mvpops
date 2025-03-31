@@ -35,6 +35,7 @@ permissions:
 env:
   TF_VAR_resource_group_name: "tf-state-rg-mvpops"
   TF_VAR_environment: ${{ github.event.inputs.environment || 'production' }}
+  TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
