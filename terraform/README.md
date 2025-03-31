@@ -1,83 +1,56 @@
-# DevOps MVP Platform - Terraform Infrastructure
+<!-- BEGIN_TF_DOCS -->
+## Requirements
 
-This directory contains the Terraform code for managing Azure resources for the DevOps MVP Platform.
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0.0 |
+| <a name="requirement_azuread"></a> [azuread](#requirement\_azuread) | ~> 2.0 |
+| <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | ~> 3.0 |
 
-## Structure
+## Providers
 
-- `modules/` - Reusable Terraform modules
-  - `azure-vm/` - Module for creating Azure virtual machines with standardized configuration
-  
-- `environments/` - Environment-specific configurations
-  - `dev/` - Development environment
-  - `prod/` - Production environment
+| Name | Version |
+|------|---------|
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | 3.117.1 |
 
-## Prerequisites
+## Modules
 
-- Terraform v1.0.0 or newer
-- Azure CLI installed and authenticated
-- Storage account for Terraform state (already configured in the environment configs)
+No modules.
 
-## Getting Started
+## Resources
 
-1. Navigate to the environment directory you want to work with:
+| Name | Type |
+|------|------|
+| [azurerm_container_registry.acr](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/container_registry) | resource |
+| [azurerm_key_vault.platform](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/key_vault) | resource |
+| [azurerm_log_analytics_workspace.platform](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_workspace) | resource |
+| [azurerm_monitor_action_group.platform](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_action_group) | resource |
+| [azurerm_resource_group.platform](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group) | resource |
+| [azurerm_storage_account.artifacts](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account) | resource |
 
-```bash
-cd environments/prod
-```
+## Inputs
 
-2. Create a `terraform.tfvars` file (you can use the provided example):
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_alert_email"></a> [alert\_email](#input\_alert\_email) | Email address for alerts | `string` | `"devops@example.com"` | no |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment (dev, test, prod) | `string` | `"prod"` | no |
+| <a name="input_location"></a> [location](#input\_location) | Azure region to deploy resources | `string` | `"swedencentral"` | no |
+| <a name="input_prefix"></a> [prefix](#input\_prefix) | Prefix to use for resource names | `string` | `"mvpops"` | no |
+| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Name of the resource group | `string` | `"mvpops-production-rg-test"` | no |
+| <a name="input_team_name"></a> [team\_name](#input\_team\_name) | Name of the team owning the resource | `string` | `"mvpops"` | no |
+| <a name="input_tenant_id"></a> [tenant\_id](#input\_tenant\_id) | Azure AD tenant ID | `string` | n/a | yes |
 
-```bash
-cp terraform.tfvars.example terraform.tfvars
-```
+## Outputs
 
-3. Edit the `terraform.tfvars` file with your specific values:
-   - Update the `vm_ssh_public_key` with your actual SSH public key
-   - Adjust any other variables as needed for your environment
-
-4. Initialize Terraform to download required providers and set up the backend:
-
-```bash
-terraform init
-```
-
-5. Create a plan to review the changes:
-
-```bash
-terraform plan -out=tfplan
-```
-
-6. Apply the changes:
-
-```bash
-terraform apply tfplan
-```
-
-## VM Management
-
-This configuration will create:
-
-- CI/CD Agent VMs (Standard_D4s_v3, Linux)
-- Monitoring VMs (Standard_E4s_v3, Linux)
-- Management VMs (Standard_B2ms, Linux)
-
-All VMs have:
-- Azure Monitor agents installed
-- Boot diagnostics enabled
-- Standardized tagging
-- Appropriate security configurations
-
-## Adding New VM Types
-
-To add a new VM type:
-
-1. Create a new module instance in the environment's `main.tf` file
-2. Configure the appropriate variables in `variables.tf` and `terraform.tfvars`
-3. Add any outputs needed in `outputs.tf`
-
-## Best Practices
-
-- Always use the provided modules to ensure standardization
-- Apply consistent tagging for all resources
-- Use the variables to control VM counts instead of duplicating code
-- Keep sensitive information in encrypted files or Azure Key Vault 
+| Name | Description |
+|------|-------------|
+| <a name="output_acr_login_server"></a> [acr\_login\_server](#output\_acr\_login\_server) | The login server URL for the Azure Container Registry |
+| <a name="output_acr_name"></a> [acr\_name](#output\_acr\_name) | The name of the Azure Container Registry |
+| <a name="output_key_vault_name"></a> [key\_vault\_name](#output\_key\_vault\_name) | The name of the Key Vault |
+| <a name="output_key_vault_uri"></a> [key\_vault\_uri](#output\_key\_vault\_uri) | The URI of the Key Vault |
+| <a name="output_log_analytics_workspace_id"></a> [log\_analytics\_workspace\_id](#output\_log\_analytics\_workspace\_id) | The ID of the Log Analytics Workspace |
+| <a name="output_log_analytics_workspace_name"></a> [log\_analytics\_workspace\_name](#output\_log\_analytics\_workspace\_name) | The name of the Log Analytics Workspace |
+| <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id) | The ID of the resource group |
+| <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name) | The name of the resource group |
+| <a name="output_storage_account_name"></a> [storage\_account\_name](#output\_storage\_account\_name) | The name of the storage account |
+<!-- END_TF_DOCS -->
