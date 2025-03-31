@@ -48,6 +48,7 @@ env:
   
   # Dynamic environment variables
   TF_VAR_environment: ${{ github.event.inputs.environment || 'production' }}
+  TF_VAR_vm_ssh_public_key: ${{ secrets.TF_VAR_VM_SSH_PUBLIC_KEY }}
 
 jobs:
   verify-credentials:
@@ -274,8 +275,16 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan
-        
+        run: |
+          # Verify SSH key is set
+          if [ -z "$TF_VAR_vm_ssh_public_key" ]; then
+            echo "Error: SSH public key is not set. Please add TF_VAR_VM_SSH_PUBLIC_KEY to repository secrets."
+            exit 1
+          fi
+          
+          # Run Terraform plan
+          terraform plan -no-color -out=tfplan
+
       - name: Archive Terraform Plan
         uses: actions/upload-artifact@v4
         with:
