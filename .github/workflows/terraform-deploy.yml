@@ -90,7 +90,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./terraform
+        working-directory: ./terraform/environments/prod
 
     steps:
       - name: Checkout repository
@@ -121,7 +121,7 @@ jobs:
         uses: aquasecurity/tfsec-sarif-action@v0.1.4
         with:
           sarif_file: tfsec.sarif
-          working_directory: terraform
+          working_directory: terraform/environments/prod
           
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v3
@@ -137,7 +137,7 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ./terraform
+        working-directory: ./terraform/environments/prod
 
     steps:
       - name: Checkout repository
@@ -244,11 +244,11 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'production' }}
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
     
-    # Use the Bash shell
+    # Use the Bash shella
     defaults:
       run:
         shell: bash
-        working-directory: ./terraform
+        working-directory: ./terraform/environments/prod
 
     steps:
       - name: Checkout repository
