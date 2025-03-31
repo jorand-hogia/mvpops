@@ -5,12 +5,13 @@ terraform {
       version = "~> 3.0"
     }
   }
-  backend "azurerm" {
-    resource_group_name  = "terraform-state-rg"
-    storage_account_name = "tfstatedevopsmvp"
-    container_name       = "tfstate"
-    key                  = "prod.terraform.tfstate"
-  }
+  # Temporarily commenting out backend configuration
+  # backend "azurerm" {
+  #   resource_group_name  = "terraform-state-rg"
+  #   storage_account_name = "tfstatedevopsmvp"
+  #   container_name       = "tfstate"
+  #   key                  = "prod.terraform.tfstate"
+  # }
 }
 
 provider "azurerm" {
@@ -58,7 +59,7 @@ module "cicd_agent_vm" {
   vm_name             = "cicd-agent-${count.index + 1}"
   resource_group_name = azurerm_resource_group.vm_rg.name
   location            = azurerm_resource_group.vm_rg.location
-  vm_size             = "Standard_D4s_v3"
+  vm_size             = "Standard_B2ms"
   os_type             = "linux"
   subnet_id           = azurerm_subnet.vm_subnet.id
   public_ip           = false
@@ -90,7 +91,7 @@ module "monitoring_vm" {
   vm_name             = "monitoring-${count.index + 1}"
   resource_group_name = azurerm_resource_group.vm_rg.name
   location            = azurerm_resource_group.vm_rg.location
-  vm_size             = "Standard_E4s_v3"
+  vm_size             = "Standard_B2ms"
   os_type             = "linux"
   subnet_id           = azurerm_subnet.vm_subnet.id
   public_ip           = true
@@ -122,7 +123,7 @@ module "management_vm" {
   vm_name             = "mgmt-${count.index + 1}"
   resource_group_name = azurerm_resource_group.vm_rg.name
   location            = azurerm_resource_group.vm_rg.location
-  vm_size             = "Standard_B2ms"
+  vm_size             = "Standard_B1ms"
   os_type             = "linux"
   subnet_id           = azurerm_subnet.vm_subnet.id
   public_ip           = true

@@ -1,7 +1,3 @@
-provider "azurerm" {
-  features {}
-}
-
 resource "azurerm_network_interface" "vm_nic" {
   name                = "${var.vm_name}-nic"
   location            = var.location
