@@ -42,6 +42,8 @@ env:
   # Terraform backend configuration
   TF_STORAGE_ACCOUNT_NAME: "mvpopstfstate"
   TF_CONTAINER_NAME: "tfstate"
+  TF_STATE_RG: "tf-state-rg-mvpops"
+  TF_LOCATION: "swedencentral"
   
   # Terraform version
   TF_VERSION: "1.5.7"
@@ -165,18 +167,14 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            # Get variables from Terraform configuration
-            STATE_RG=$(terraform -chdir=terraform/environments/prod output -raw state_resource_group_name)
-            LOCATION=$(terraform -chdir=terraform/environments/prod output -raw location)
-            
             # Create resource group if it doesn't exist
-            az group create --name $STATE_RG --location $LOCATION --tags ManagedBy=Terraform Team=Platform
+            az group create --name ${{ env.TF_STATE_RG }} --location ${{ env.TF_LOCATION }} --tags ManagedBy=Terraform Team=Platform
             
             # Create storage account if it doesn't exist
             az storage account create \
               --name ${{ env.TF_STORAGE_ACCOUNT_NAME }} \
-              --resource-group $STATE_RG \
-              --location $LOCATION \
+              --resource-group ${{ env.TF_STATE_RG }} \
+              --location ${{ env.TF_LOCATION }} \
               --sku Standard_LRS \
               --encryption-services blob \
               --kind StorageV2 \
@@ -192,11 +190,8 @@ jobs:
       - name: Terraform Init
         id: init
         run: |
-          # Get state resource group name from Terraform configuration
-          STATE_RG=$(terraform output -raw state_resource_group_name)
-          
           terraform init \
-            -backend-config="resource_group_name=$STATE_RG" \
+            -backend-config="resource_group_name=${{ env.TF_STATE_RG }}" \
             -backend-config="storage_account_name=${{ env.TF_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"
@@ -286,7 +281,7 @@ jobs:
         id: init
         run: |
           terraform init \
-            -backend-config="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+            -backend-config="resource_group_name=${{ env.TF_STATE_RG }}" \
             -backend-config="storage_account_name=${{ env.TF_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"
