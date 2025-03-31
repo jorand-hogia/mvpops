@@ -33,19 +33,21 @@ permissions:
   id-token: write
 
 env:
-  TF_VAR_resource_group_name: "tf-state-rg-mvpops"
-  TF_VAR_environment: ${{ github.event.inputs.environment || 'production' }}
-  TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+  # Authentication variables
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-  TF_VERSION: "1.5.7"
-  AZURE_LOCATION: "swedencentral"
-  AZURE_RESOURCE_TAG_TEAM: "mvpops"
-  AZURE_PRODUCTION_RG: "mvpops-production-rg"
+  
+  # Terraform backend configuration
   TF_STORAGE_ACCOUNT_NAME: "mvpopstfstate"
   TF_CONTAINER_NAME: "tfstate"
+  
+  # Terraform version
+  TF_VERSION: "1.5.7"
+  
+  # Dynamic environment variables
+  TF_VAR_environment: ${{ github.event.inputs.environment || 'production' }}
 
 jobs:
   verify-credentials:
@@ -163,17 +165,18 @@ jobs:
         uses: azure/CLI@v1
         with:
           inlineScript: |
-            # Create resource group if it doesn't exist
-            az group create --name ${{ env.TF_VAR_resource_group_name }} --location ${{ env.AZURE_LOCATION }} --tags team=${{ env.AZURE_RESOURCE_TAG_TEAM }}
+            # Get variables from Terraform configuration
+            STATE_RG=$(terraform -chdir=terraform/environments/prod output -raw state_resource_group_name)
+            LOCATION=$(terraform -chdir=terraform/environments/prod output -raw location)
             
-            # Also ensure production resource group exists with proper tags
-            az group create --name ${{ env.AZURE_PRODUCTION_RG }} --location ${{ env.AZURE_LOCATION }} --tags team=${{ env.AZURE_RESOURCE_TAG_TEAM }} || true
+            # Create resource group if it doesn't exist
+            az group create --name $STATE_RG --location $LOCATION --tags ManagedBy=Terraform Team=Platform
             
             # Create storage account if it doesn't exist
             az storage account create \
               --name ${{ env.TF_STORAGE_ACCOUNT_NAME }} \
-              --resource-group ${{ env.TF_VAR_resource_group_name }} \
-              --location ${{ env.AZURE_LOCATION }} \
+              --resource-group $STATE_RG \
+              --location $LOCATION \
               --sku Standard_LRS \
               --encryption-services blob \
               --kind StorageV2 \
@@ -189,8 +192,11 @@ jobs:
       - name: Terraform Init
         id: init
         run: |
+          # Get state resource group name from Terraform configuration
+          STATE_RG=$(terraform output -raw state_resource_group_name)
+          
           terraform init \
-            -backend-config="resource_group_name=${{ env.TF_VAR_resource_group_name }}" \
+            -backend-config="resource_group_name=$STATE_RG" \
             -backend-config="storage_account_name=${{ env.TF_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"

@@ -1,6 +1,16 @@
+output "location" {
+  description = "The Azure location where resources are created"
+  value       = var.location
+}
+
+output "state_resource_group_name" {
+  description = "The name of the resource group for Terraform state"
+  value       = var.state_resource_group_name
+}
+
 output "resource_group_name" {
-  description = "The name of the resource group"
-  value       = azurerm_resource_group.vm_rg.name
+  description = "The name of the resource group for infrastructure"
+  value       = var.resource_group_name
 }
 
 output "resource_group_location" {
