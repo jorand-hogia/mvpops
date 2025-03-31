@@ -42,7 +42,7 @@ env:
   TF_VERSION: "1.5.7"
   AZURE_LOCATION: "swedencentral"
   AZURE_RESOURCE_TAG_TEAM: "mvpops"
-  AZURE_PRODUCTION_RG: "mvpops-production-rg-test"
+  AZURE_PRODUCTION_RG: "mvpops-production-rg"
   TF_STORAGE_ACCOUNT_NAME: "mvpopstfstate"
   TF_CONTAINER_NAME: "tfstate"
 
@@ -267,8 +267,13 @@ jobs:
 
       - name: Import Existing Resource Group
         run: |
-          terraform import azurerm_resource_group.platform "/subscriptions/$ARM_SUBSCRIPTION_ID/resourceGroups/mvpops-production-rg"
-        working-directory: ./terraform
+          # First check if the resource group exists
+          if az group show --name ${{ env.TF_VAR_resource_group_name }} &>/dev/null; then
+            echo "Importing existing resource group..."
+            terraform import azurerm_resource_group.platform "/subscriptions/$ARM_SUBSCRIPTION_ID/resourceGroups/${{ env.TF_VAR_resource_group_name }}"
+          else
+            echo "Resource group does not exist yet, skipping import"
+          fi
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
