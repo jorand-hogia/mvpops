@@ -13,13 +13,13 @@ variable "environment" {
 variable "resource_group_name" {
   description = "Name of the resource group for infrastructure"
   type        = string
-  default     = "mvpops-production-rg"
+  default     = "JP-test"
 }
 
 variable "state_resource_group_name" {
   description = "Name of the resource group for Terraform state"
   type        = string
-  default     = "tf-state-rg-mvpops"
+  default     = "JP-test-tf-state-rg"
 }
 
 variable "tags" {
