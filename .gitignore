@@ -69,4 +69,8 @@ Desktop.ini
 *.pem
 *.key
 *.p12
-*.cer 
+*.cer
+
+# SSH Keys
+terraform/environments/prod/ssh_key
+terraform/environments/prod/ssh_key.pub 
