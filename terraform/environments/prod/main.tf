@@ -5,13 +5,6 @@ terraform {
       version = "~> 3.0"
     }
   }
-  # Temporarily commenting out backend configuration
-  # backend "azurerm" {
-  #   resource_group_name  = "terraform-state-rg"
-  #   storage_account_name = "tfstatedevopsmvp"
-  #   container_name       = "tfstate"
-  #   key                  = "prod.terraform.tfstate"
-  # }
 }
 
 provider "azurerm" {
@@ -20,7 +13,7 @@ provider "azurerm" {
 
 # Define resource group for VMs
 resource "azurerm_resource_group" "vm_rg" {
-  name     = "mvpops-production-rg-test"
+  name     = "JP-test"
   location = var.location
   tags     = var.tags
 }
