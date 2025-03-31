@@ -164,7 +164,17 @@ jobs:
       - name: Create Storage for Terraform State if needed
         uses: azure/CLI@v1
         with:
+          azcliversion: 2.70.0
           inlineScript: |
+            # Login to Azure using service principal
+            az login --service-principal \
+              --username "$ARM_CLIENT_ID" \
+              --password "$ARM_CLIENT_SECRET" \
+              --tenant "$ARM_TENANT_ID"
+            
+            # Set the subscription
+            az account set --subscription "$ARM_SUBSCRIPTION_ID"
+            
             # Extract variables from Terraform files
             STATE_RG=$(grep -A2 'state_resource_group_name' terraform/environments/prod/variables.tf | grep 'default' | cut -d'"' -f2)
             LOCATION=$(grep -A2 'location' terraform/environments/prod/variables.tf | grep 'default' | cut -d'"' -f2)
