@@ -276,21 +276,25 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: |
-          # Verify SSH key is set
-          if [ -z "$TF_VAR_vm_ssh_public_key" ]; then
-            echo "Error: SSH public key is not set. Please add TF_VAR_VM_SSH_PUBLIC_KEY to repository secrets."
-            exit 1
-          fi
-          
-          # Run Terraform plan
-          terraform plan -no-color -out=tfplan
+          cd terraform/environments/prod
+          terraform plan -no-color -out=../tfplan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          TF_VAR_vm_ssh_public_key: ${{ secrets.TF_VAR_VM_SSH_PUBLIC_KEY }}
 
-      - name: Archive Terraform Plan
+      - name: Upload Terraform Plan
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan
           path: terraform/tfplan
           retention-days: 5
+          if-no-files-found: warn
+          compression-level: 6
+          overwrite: false
+          include-hidden-files: false
 
       - name: Comment Plan on PR
         uses: actions/github-script@v7
