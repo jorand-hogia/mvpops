@@ -152,29 +152,39 @@ jobs:
           echo "Using AZURE_SUBSCRIPTION_ID: ${ARM_SUBSCRIPTION_ID:0:4}...${ARM_SUBSCRIPTION_ID: -4}"
           echo "Using AZURE_TENANT_ID: ${ARM_TENANT_ID:0:4}...${ARM_TENANT_ID: -4}"
 
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+      - name: Get Terraform Configuration Values
+        id: tf_config
+        run: |
+          # Initialize Terraform without backend to read values
+          terraform init -backend=false
+          
+          # Export values as environment variables
+          echo "state_rg=$(terraform output -raw state_resource_group_name)" >> $GITHUB_ENV
+          echo "location=$(terraform output -raw location)" >> $GITHUB_ENV
 
       - name: Create Storage for Terraform State if needed
         uses: azure/CLI@v1
         with:
           inlineScript: |
             # Create resource group if it doesn't exist
-            az group create --name ${{ env.TF_STATE_RG }} --location ${{ env.TF_LOCATION }} --tags ManagedBy=Terraform Team=Platform
+            az group create --name ${{ env.state_rg }} --location ${{ env.location }} --tags ManagedBy=Terraform Team=Platform
             
             # Create storage account if it doesn't exist
             az storage account create \
               --name ${{ env.TF_STORAGE_ACCOUNT_NAME }} \
-              --resource-group ${{ env.TF_STATE_RG }} \
-              --location ${{ env.TF_LOCATION }} \
+              --resource-group ${{ env.state_rg }} \
+              --location ${{ env.location }} \
               --sku Standard_LRS \
               --encryption-services blob \
               --kind StorageV2 \
@@ -191,7 +201,7 @@ jobs:
         id: init
         run: |
           terraform init \
-            -backend-config="resource_group_name=${{ env.TF_STATE_RG }}" \
+            -backend-config="resource_group_name=${{ env.state_rg }}" \
             -backend-config="storage_account_name=${{ env.TF_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"
@@ -260,16 +270,16 @@ jobs:
           echo "Using AZURE_SUBSCRIPTION_ID: ${ARM_SUBSCRIPTION_ID:0:4}...${ARM_SUBSCRIPTION_ID: -4}"
           echo "Using AZURE_TENANT_ID: ${ARM_TENANT_ID:0:4}...${ARM_TENANT_ID: -4}"
 
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
       - name: Download Terraform Plan
         uses: actions/download-artifact@v4
@@ -281,7 +291,7 @@ jobs:
         id: init
         run: |
           terraform init \
-            -backend-config="resource_group_name=${{ env.TF_STATE_RG }}" \
+            -backend-config="resource_group_name=${{ env.state_rg }}" \
             -backend-config="storage_account_name=${{ env.TF_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"
