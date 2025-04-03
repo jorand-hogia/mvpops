@@ -166,7 +166,7 @@ module "monitor" {
 
   log_analytics_workspace_name = "mvpops-${var.environment}-law"
   action_group_name            = "mvpops-${var.environment}-ag"
-  action_group_short_name      = "mvpops-${var.environment}" # Adjust if needed (max 12 chars)
+  action_group_short_name      = "mvpops-prod" # Shortened name (max 12 chars)
 
   # Example email receiver - customize or provide via variables
   email_receivers = {
