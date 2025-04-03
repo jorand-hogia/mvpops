@@ -40,7 +40,7 @@ This plan details the specific implementation steps for each phase of the DevOps
 | INFRA-01 | Create Azure Monitor Terraform module | Develop reusable module for Azure Monitor | DevOps Engineer | Day 1-2 | Module created with variables and outputs | Completed |
 | INFRA-02 | Deploy Azure Monitor resources | Implement monitoring for all production resources | DevOps Engineer | Day 3 | Azure Monitor collecting metrics from resources | Completed |
 | INFRA-03 | Configure VM performance monitoring | Set up CPU, memory, disk, and network metrics | Ops Engineer | Day 4 | Key VM metrics visible in dashboard | Completed |
-| INFRA-04 | Implement network monitoring | Configure NSG flow logs and network connectivity monitoring | Network Engineer | Day 5 | Network traffic and health metrics available | Not Started |
+| INFRA-04 | Implement network monitoring | Configure NSG flow logs and network connectivity monitoring | Network Engineer | Day 5 | Network traffic and health metrics available | Completed |
 | INFRA-05 | Set up resource health tracking | Configure resource health dashboard for critical services | Ops Engineer | Day 5 | Resource health status visible in dashboard | Completed |
 | **Deliverables**: Azure Monitor module, VM performance metrics, Network monitoring, Resource health dashboard |
 
