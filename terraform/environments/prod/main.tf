@@ -141,4 +141,16 @@ module "management_vm" {
       role = "management"
     }
   )
+}
+
+# Configure Azure Security Center (Defender for Cloud)
+module "security_center" {
+  source = "../../modules/azure/security"
+
+  defender_plans_to_enable = {
+    "VirtualMachines" = { tier = "Standard" }
+    "StorageAccounts" = { tier = "Standard" }
+    "KeyVaults"       = { tier = "Standard" }
+    # Add other plans as needed based on project requirements
+  }
 } 
