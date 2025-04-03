@@ -13,17 +13,22 @@ provider "azurerm" {
   features {}
 }
 
-# Data source for the regional Network Watcher - REMOVED
-# data "azurerm_network_watcher" "main" {
-#   name                = "NetworkWatcher_${var.location}"
-#   resource_group_name = "NetworkWatcherRG"
-# }
+# Data source for the regional Network Watcher - Not needed as we create one explicitly
 
 # Define resource group for VMs
 resource "azurerm_resource_group" "vm_rg" {
   name     = "JP-test"
   location = var.location
   tags     = var.tags
+}
+
+# Create dedicated Network Watcher in the App RG
+resource "azurerm_network_watcher" "app_rg_watcher" {
+  name                = "${azurerm_resource_group.vm_rg.name}-networkwatcher"
+  location            = azurerm_resource_group.vm_rg.location
+  resource_group_name = azurerm_resource_group.vm_rg.name
+
+  tags = var.tags
 }
 
 # Create a virtual network for VMs
@@ -96,9 +101,9 @@ resource "azurerm_subnet_network_security_group_association" "vm_subnet_nsg_asso
 
 # Enable NSG Flow Logs
 resource "azurerm_network_watcher_flow_log" "vm_subnet_nsg_flowlog" {
-  # Find the default Network Watcher in the region - REMOVED explicit reference
-  # network_watcher_name = "NetworkWatcher_${azurerm_resource_group.vm_rg.location}"
-  # resource_group_name  = "NetworkWatcherRG" # Default RG for Network Watchers
+  # Use the Network Watcher created within the App RG
+  network_watcher_name = azurerm_network_watcher.app_rg_watcher.name
+  resource_group_name  = azurerm_resource_group.vm_rg.name
   
   name                       = "${azurerm_network_security_group.vm_subnet_nsg.name}-flowlog"
   network_security_group_id  = azurerm_network_security_group.vm_subnet_nsg.id
