@@ -18,7 +18,7 @@ This plan details the specific implementation steps for each phase of the DevOps
 |---------|------|-------------|-------------|----------|------------------|--------|
 | RES-01 | Deploy Resource Management System | Create central resource management using Terraform | DevOps Engineer | Day 1-2 | Resource management deployed with proper configuration | Completed |
 | RES-02 | Configure high availability | Set up redundancy for high availability in secondary regions | DevOps Engineer | Day 3 | HA configuration enabled and validated | In Progress |
-| RES-03 | Implement security scanning | Configure Defender for Cloud for resource scanning | Security Engineer | Day 4-5 | Scanning enabled with alert policies | Not Started |
+| RES-03 | Implement security scanning | Configure Defender for Cloud for resource scanning | Security Engineer | Day 4-5 | Scanning enabled with alert policies | Completed |
 | RES-04 | Create resource policies | Set up resource governance with policy rules | DevOps Engineer | Day 6 | Policies created and tested | In Progress |
 | RES-05 | Integrate with GitHub Actions | Update GitHub workflows to use central resource management | DevOps Engineer | Day 7-8 | Working integration with test workflow | Completed |
 | **Deliverables**: Resource management system, Security scanning reports, GitHub integration documentation, IaC templates |
