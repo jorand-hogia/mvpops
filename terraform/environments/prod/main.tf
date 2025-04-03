@@ -171,7 +171,7 @@ module "monitor" {
 
   # Example email receiver - customize or provide via variables
   email_receivers = {
-    "PlatformTeam" = "platform-team@example.com" # Replace with actual email
+    "PlatformTeam" = "jorgen.andersson@hogia.se" # Replace with actual email
   }
 
   # Keep VM Insights enabled (default in module)
