@@ -113,9 +113,9 @@ resource "azurerm_network_watcher_flow_log" "vm_subnet_nsg_flowlog" {
   version = 2
   traffic_analytics {
     enabled               = true
-    workspace_id          = module.monitor.log_analytics_workspace_id # Send to our LA Workspace
+    workspace_id          = module.monitor.log_analytics_workspace_guid # Send to our LA Workspace (Use GUID)
     workspace_region      = azurerm_resource_group.vm_rg.location
-    workspace_resource_id = module.monitor.log_analytics_workspace_id
+    workspace_resource_id = module.monitor.log_analytics_workspace_id # Keep full ID here
     interval_in_minutes   = 10 # Frequency for processing logs
   }
   

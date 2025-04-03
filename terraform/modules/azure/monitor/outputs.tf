@@ -8,6 +8,11 @@ output "log_analytics_workspace_name" {
   value       = azurerm_log_analytics_workspace.monitor_workspace.name
 }
 
+output "log_analytics_workspace_guid" {
+  description = "The GUID of the Log Analytics Workspace."
+  value       = azurerm_log_analytics_workspace.monitor_workspace.workspace_id
+}
+
 output "action_group_id" {
   description = "The ID of the Monitor Action Group."
   value       = azurerm_monitor_action_group.main.id
