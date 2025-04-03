@@ -153,4 +153,25 @@ module "security_center" {
     "KeyVaults"       = { tier = "Standard" }
     # Add other plans as needed based on project requirements
   }
+}
+
+# Configure Azure Monitor (Log Analytics, Action Group, etc.)
+module "monitor" {
+  source = "../../modules/azure/monitor"
+
+  resource_group_name = azurerm_resource_group.vm_rg.name # Deploy in the same RG as VMs
+  location            = azurerm_resource_group.vm_rg.location
+  tags                = var.tags
+
+  log_analytics_workspace_name = "mvpops-${var.environment}-law"
+  action_group_name            = "mvpops-${var.environment}-ag"
+  action_group_short_name      = "mvpops-${var.environment}" # Adjust if needed (max 12 chars)
+
+  # Example email receiver - customize or provide via variables
+  email_receivers = {
+    "PlatformTeam" = "platform-team@example.com" # Replace with actual email
+  }
+
+  # Keep VM Insights enabled (default in module)
+  # enable_vm_insights = true 
 } 
