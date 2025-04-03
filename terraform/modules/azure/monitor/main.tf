@@ -93,4 +93,26 @@ resource "azurerm_monitor_data_collection_rule" "vm_performance_dcr" {
   }
 
   tags = var.tags
+}
+
+# Activity Log Alert for VM Resource Health (Unavailable)
+resource "azurerm_monitor_activity_log_alert" "vm_health_alert" {
+  name                = "${var.base_name}-vm-unavailable-alert"
+  resource_group_name = var.resource_group_name
+  scopes              = [var.target_resource_group_id] # Scope to the VM resource group
+  description         = "Alert when a VM in the target resource group becomes unavailable based on Resource Health."
+
+  criteria {
+    category       = "ResourceHealth"
+    # status         = "Active" # Optional: Can filter by alert status if needed
+    level          = "Error" # Typically unavailable events are Error level
+    # You might need to refine criteria based on exact event properties observed in Activity Log
+    # resource_type = "Microsoft.Compute/virtualMachines" # Optional: Be more specific
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.main.id
+  }
+
+  tags = var.tags
 } 

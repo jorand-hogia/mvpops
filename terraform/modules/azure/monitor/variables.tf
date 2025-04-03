@@ -60,4 +60,9 @@ variable "email_receivers" {
 variable "base_name" {
   description = "Base name prefix for resources created by the module (e.g., dcr name)."
   type        = string
+}
+
+variable "target_resource_group_id" {
+  description = "The ID of the resource group to scope the VM health alert to."
+  type        = string
 } 

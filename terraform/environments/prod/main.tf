@@ -163,6 +163,7 @@ module "monitor" {
   location            = azurerm_resource_group.vm_rg.location
   tags                = var.tags
   base_name           = "mvpops-${var.environment}" # Base name for DCR, etc.
+  target_resource_group_id = azurerm_resource_group.vm_rg.id # Pass the VM RG ID for health alert scope
 
   log_analytics_workspace_name = "mvpops-${var.environment}-law"
   action_group_name            = "mvpops-${var.environment}-ag"
