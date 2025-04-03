@@ -49,7 +49,7 @@ resource "azurerm_storage_account" "boot_diagnostics" {
 
 # Create CI/CD Agent VM
 module "cicd_agent_vm" {
-  source              = "../../modules/azure-vm"
+  source              = "../../modules/azure/vm"
   count               = var.cicd_agent_vm_count
   vm_name             = "cicd-agent-${count.index + 1}"
   resource_group_name = azurerm_resource_group.vm_rg.name
@@ -81,7 +81,7 @@ module "cicd_agent_vm" {
 
 # Create Monitoring VM
 module "monitoring_vm" {
-  source              = "../../modules/azure-vm"
+  source              = "../../modules/azure/vm"
   count               = var.monitoring_vm_count
   vm_name             = "monitoring-${count.index + 1}"
   resource_group_name = azurerm_resource_group.vm_rg.name
@@ -113,7 +113,7 @@ module "monitoring_vm" {
 
 # Create Management VM
 module "management_vm" {
-  source              = "../../modules/azure-vm"
+  source              = "../../modules/azure/vm"
   count               = var.management_vm_count
   vm_name             = "mgmt-${count.index + 1}"
   resource_group_name = azurerm_resource_group.vm_rg.name
