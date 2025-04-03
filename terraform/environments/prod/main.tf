@@ -104,7 +104,10 @@ resource "azurerm_network_watcher_flow_log" "vm_subnet_nsg_flowlog" {
   network_security_group_id  = azurerm_network_security_group.vm_subnet_nsg.id
   storage_account_id         = azurerm_storage_account.nsg_flow_logs.id
   enabled                    = true
-  retention_in_days          = 7 # Configure retention (0 = forever)
+  retention_policy {
+    enabled = true
+    days    = 7
+  }
 
   # Configure Flow Log version and Traffic Analytics (optional)
   version = 2
@@ -325,16 +328,18 @@ resource "azurerm_network_connection_monitor" "main" {
   name                 = "mvpops-${var.environment}-connection-monitor"
   network_watcher_id   = data.azurerm_network_watcher.main.id
   location             = azurerm_resource_group.vm_rg.location # Must match Network Watcher location
-  workspace_id         = module.monitor.log_analytics_workspace_id # Link to LA Workspace
+  output {
+    workspace_resource_id = module.monitor.log_analytics_workspace_id
+  }
   
   endpoint {
     name               = "cicdAgent1"
-    virtual_machine_id = module.cicd_agent_vm[0].vm_id # First CICD agent
+    resource_id        = module.cicd_agent_vm[0].vm_id # Use resource_id
   }
 
   endpoint {
     name               = "managementVm1"
-    virtual_machine_id = module.management_vm[0].vm_id # First Management VM
+    resource_id        = module.management_vm[0].vm_id # Use resource_id
   }
   
   endpoint {
@@ -371,15 +376,15 @@ resource "azurerm_network_connection_monitor" "main" {
   test_group {
     name                     = "internalSshConnectivity"
     test_configuration_names = ["sshInternalTest"]
-    source_endpoint_names    = ["cicdAgent1"]
-    destination_endpoint_names = ["managementVm1"]
+    source_endpoints         = ["cicdAgent1"] # Use plural
+    destination_endpoints    = ["managementVm1"] # Use plural
   }
   
   test_group {
     name                       = "externalHttpConnectivity"
     test_configuration_names   = ["httpExternalTest"]
-    source_endpoint_names      = ["managementVm1"] # Test from mgmt VM
-    destination_endpoint_names = ["googleHttp"]
+    source_endpoints           = ["managementVm1"] # Use plural
+    destination_endpoints      = ["googleHttp"] # Use plural
   }
   
   tags = var.tags
