@@ -331,12 +331,12 @@ resource "azurerm_network_connection_monitor" "main" {
   
   endpoint {
     name               = "cicdAgent1"
-    resource_id        = module.cicd_agent_vm[0].vm_id # Use resource_id again
+    virtual_machine_id = module.cicd_agent_vm[0].vm_id # Reverting back based on latest error
   }
 
   endpoint {
     name               = "managementVm1"
-    resource_id        = module.management_vm[0].vm_id # Use resource_id again
+    virtual_machine_id = module.management_vm[0].vm_id # Reverting back based on latest error
   }
   
   endpoint {
