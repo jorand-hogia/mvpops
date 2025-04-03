@@ -37,6 +37,82 @@ resource "azurerm_subnet" "vm_subnet" {
   address_prefixes     = ["10.0.1.0/24"]
 }
 
+# Create Network Security Group for VM Subnet
+resource "azurerm_network_security_group" "vm_subnet_nsg" {
+  name                = "${azurerm_subnet.vm_subnet.name}-nsg"
+  location            = azurerm_resource_group.vm_rg.location
+  resource_group_name = azurerm_resource_group.vm_rg.name
+
+  security_rule {
+    name                       = "AllowSSHInbound"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*" # WARNING: Change to a specific IP/range
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowAzureMonitorOutbound"
+    priority                   = 100
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "AzureMonitor" # Use service tag
+  }
+  
+  security_rule {
+      name                       = "AllowInternetOutbound"
+      priority                   = 200 # Lower priority than AzureMonitor
+      direction                  = "Outbound"
+      access                     = "Allow"
+      protocol                   = "*"
+      source_port_range          = "*"
+      destination_port_range     = "*"
+      source_address_prefix      = "*"
+      destination_address_prefix = "Internet"
+  }
+
+  tags = var.tags
+}
+
+# Associate NSG with VM Subnet
+resource "azurerm_subnet_network_security_group_association" "vm_subnet_nsg_assoc" {
+  subnet_id                 = azurerm_subnet.vm_subnet.id
+  network_security_group_id = azurerm_network_security_group.vm_subnet_nsg.id
+}
+
+# Enable NSG Flow Logs
+resource "azurerm_network_watcher_flow_log" "vm_subnet_nsg_flowlog" {
+  # Find the default Network Watcher in the region
+  network_watcher_name = "NetworkWatcher_${azurerm_resource_group.vm_rg.location}"
+  resource_group_name  = "NetworkWatcherRG" # Default RG for Network Watchers
+  
+  name                       = "${azurerm_network_security_group.vm_subnet_nsg.name}-flowlog"
+  network_security_group_id  = azurerm_network_security_group.vm_subnet_nsg.id
+  storage_account_id         = azurerm_storage_account.nsg_flow_logs.id
+  enabled                    = true
+  retention_in_days          = 7 # Configure retention (0 = forever)
+
+  # Configure Flow Log version and Traffic Analytics (optional)
+  version = 2
+  traffic_analytics {
+    enabled               = true
+    workspace_id          = module.monitor.log_analytics_workspace_id # Send to our LA Workspace
+    workspace_region      = azurerm_resource_group.vm_rg.location
+    workspace_resource_id = module.monitor.log_analytics_workspace_id
+    interval_in_minutes   = 10 # Frequency for processing logs
+  }
+  
+  tags = var.tags
+}
+
 # Create a storage account for boot diagnostics
 resource "azurerm_storage_account" "boot_diagnostics" {
   name                     = "bootdiagdevopsprod"
@@ -45,6 +121,18 @@ resource "azurerm_storage_account" "boot_diagnostics" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
   tags                     = var.tags
+}
+
+# Create Storage Account for NSG Flow Logs
+resource "azurerm_storage_account" "nsg_flow_logs" {
+  name                     = "stnsgflowlogs${var.environment}" # Needs global uniqueness
+  resource_group_name      = azurerm_resource_group.vm_rg.name # Store in same RG for simplicity
+  location                 = azurerm_resource_group.vm_rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS" # LRS is usually sufficient
+  account_kind             = "StorageV2"
+
+  tags = var.tags
 }
 
 # Create CI/CD Agent VM
