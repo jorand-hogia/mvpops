@@ -276,7 +276,7 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: |
-          terraform plan -no-color -out=../tfplan
+          terraform plan -no-color -out=tfplan
         env:
           ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -288,7 +288,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan
-          path: terraform/tfplan
+          path: terraform/environments/prod/tfplan
           retention-days: 5
           if-no-files-found: warn
           compression-level: 6
@@ -302,7 +302,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const output = require('child_process').execSync('cd terraform && terraform show -no-color tfplan').toString();
+            const output = require('child_process').execSync('cd terraform/environments/prod && terraform show -no-color tfplan').toString();
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -318,7 +318,6 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'production' }}
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
     
-    # Use the Bash shella
     defaults:
       run:
         shell: bash
@@ -348,13 +347,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: terraform-plan
-          path: terraform
+          path: terraform/environments/prod
           
       - name: Terraform Init
         id: init
         run: |
+          # Use the same hardcoded value as in the Azure CLI step
+          STATE_RG="tf-state-rg-mvpops"
+          echo "Using state resource group: $STATE_RG"
+          
           terraform init \
-            -backend-config="resource_group_name=${{ env.TF_STATE_RG }}" \
+            -backend-config="resource_group_name=$STATE_RG" \
             -backend-config="storage_account_name=${{ env.TF_STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=${{ env.TF_CONTAINER_NAME }}" \
             -backend-config="key=terraform.tfstate"
