@@ -328,18 +328,15 @@ resource "azurerm_network_connection_monitor" "main" {
   name                 = "mvpops-${var.environment}-connection-monitor"
   network_watcher_id   = data.azurerm_network_watcher.main.id
   location             = azurerm_resource_group.vm_rg.location # Must match Network Watcher location
-  output {
-    workspace_resource_id = module.monitor.log_analytics_workspace_id
-  }
   
   endpoint {
     name               = "cicdAgent1"
-    resource_id        = module.cicd_agent_vm[0].vm_id # Use resource_id
+    virtual_machine_id = module.cicd_agent_vm[0].vm_id # Reverted to virtual_machine_id
   }
 
   endpoint {
     name               = "managementVm1"
-    resource_id        = module.management_vm[0].vm_id # Use resource_id
+    virtual_machine_id = module.management_vm[0].vm_id # Reverted to virtual_machine_id
   }
   
   endpoint {
