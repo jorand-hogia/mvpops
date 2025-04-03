@@ -1,7 +1,7 @@
 variable "location" {
-  description = "The Azure location where all resources will be created"
+  description = "The Azure region for the Production environment."
   type        = string
-  default     = "swedencentral"
+  # No default - should be provided via tfvars or environment variables
 }
 
 variable "environment" {
@@ -11,9 +11,9 @@ variable "environment" {
 }
 
 variable "resource_group_name" {
-  description = "Name of the resource group for infrastructure"
+  description = "The name of the main resource group for the Production environment."
   type        = string
-  default     = "JP-test"
+  # No default - should be provided via tfvars or environment variables
 }
 
 variable "state_resource_group_name" {
@@ -61,4 +61,10 @@ variable "vm_ssh_public_key" {
   description = "SSH public key for VM admin access"
   type        = string
   sensitive   = true
+}
+
+variable "cost_center" {
+  description = "The cost center tag value for resource tracking."
+  type        = string
+  default     = "JPCostCenterProd"
 } 
