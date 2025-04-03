@@ -19,7 +19,26 @@ variable "resource_group_name" {
 variable "state_resource_group_name" {
   description = "Name of the resource group for Terraform state"
   type        = string
-  default     = "JP-test-tf-state-rg"
+  default     = "JStarting script execution via docker image mcr.microsoft.com/azure-cli:2.70.0
+Listing resource groups to verify access...
+
+Name                   Location       Status
+---------------------  -------------  ---------
+HPTP                   swedencentral  Succeeded
+win-vm-iis-anemone-rg  swedencentral  Succeeded
+tfstaterg              swedencentral  Succeeded
+rg-ai900               swedencentral  Succeeded
+
+Creating resource group  in swedencentral...
+
+ERROR: (None) No HTTP resource was found that matches the request URI 'https://management.azure.com/subscriptions/***/resourcegroups/?api-version=2022-09-01'.
+Code: None
+Message: No HTTP resource was found that matches the request URI 'https://management.azure.com/subscriptions/***/resourcegroups/?api-version=2022-09-01'.
+Error: Error: az cli script failed.
+cleaning up container...
+MICROSOFT_AZURE_CLI_1743428402219_CONTAINER
+
+Error: az cli script failed.P-test-tf-state-rg"
 }
 
 variable "tags" {

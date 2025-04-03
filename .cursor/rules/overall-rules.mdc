@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: 
@@ -33,6 +33,7 @@ This project focuses on building a centralized DevOps platform that product team
 - Common security scanning and compliance tools
 - Self-service deployment capabilities
 - Standardized infrastructure templates
+- The ops solution can be hosted both onprem and in any cloud.
 
 This project follows specific conventions for:
 - @tech-stack.mdc
