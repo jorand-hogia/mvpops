@@ -13,6 +13,12 @@ provider "azurerm" {
   features {}
 }
 
+# Data source for the regional Network Watcher
+data "azurerm_network_watcher" "main" {
+  name                = "NetworkWatcher_${var.location}"
+  resource_group_name = "NetworkWatcherRG"
+}
+
 # Define resource group for VMs
 resource "azurerm_resource_group" "vm_rg" {
   name     = "JP-test"
@@ -312,4 +318,69 @@ resource "azurerm_monitor_data_collection_rule_association" "management_vm_dcr_a
 #   scope                = module.management_vm[count.index].vm_id
 #   role_definition_name = "Monitoring Metrics Publisher"
 #   principal_id         = module.management_vm[count.index].identity_principal_id
-# } 
+# }
+
+# Configure Network Connection Monitor
+resource "azurerm_network_connection_monitor" "main" {
+  name                 = "mvpops-${var.environment}-connection-monitor"
+  network_watcher_id   = data.azurerm_network_watcher.main.id
+  location             = azurerm_resource_group.vm_rg.location # Must match Network Watcher location
+  workspace_id         = module.monitor.log_analytics_workspace_id # Link to LA Workspace
+  
+  endpoint {
+    name               = "cicdAgent1"
+    virtual_machine_id = module.cicd_agent_vm[0].vm_id # First CICD agent
+  }
+
+  endpoint {
+    name               = "managementVm1"
+    virtual_machine_id = module.management_vm[0].vm_id # First Management VM
+  }
+  
+  endpoint {
+    name    = "googleHttp"
+    address = "google.com"
+  }
+
+  test_configuration {
+    name                = "sshInternalTest"
+    protocol            = "Tcp"
+    test_frequency_in_seconds = 60 # Check every minute
+    tcp_configuration {
+      port = 22
+    }
+  }
+  
+  test_configuration {
+    name                      = "httpExternalTest"
+    protocol                  = "Http"
+    test_frequency_in_seconds = 300 # Check every 5 minutes
+    http_configuration {
+      port               = 80
+      method             = "GET"
+      path               = "/"
+      prefer_https       = false # Test plain HTTP
+      request_header {
+        name  = "User-Agent"
+        value = "TerraformConnectionMonitor"
+      }
+      valid_status_code_ranges = ["200-299", "300-399"] # Accept redirects
+    }
+  }
+
+  test_group {
+    name                     = "internalSshConnectivity"
+    test_configuration_names = ["sshInternalTest"]
+    source_endpoint_names    = ["cicdAgent1"]
+    destination_endpoint_names = ["managementVm1"]
+  }
+  
+  test_group {
+    name                       = "externalHttpConnectivity"
+    test_configuration_names   = ["httpExternalTest"]
+    source_endpoint_names      = ["managementVm1"] # Test from mgmt VM
+    destination_endpoint_names = ["googleHttp"]
+  }
+  
+  tags = var.tags
+} 
