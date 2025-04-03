@@ -105,7 +105,7 @@ resource "azurerm_monitor_activity_log_alert" "vm_health_alert" {
   criteria {
     category       = "ResourceHealth"
     # status         = "Active" # Optional: Can filter by alert status if needed
-    level          = "Error" # Typically unavailable events are Error level
+    # level          = "Error" # Removed: Invalid for ResourceHealth category
     # You might need to refine criteria based on exact event properties observed in Activity Log
     # resource_type = "Microsoft.Compute/virtualMachines" # Optional: Be more specific
   }
