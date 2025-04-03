@@ -201,4 +201,26 @@ resource "azurerm_monitor_data_collection_rule_association" "management_vm_dcr_a
   target_resource_id   = module.management_vm[count.index].vm_id
   data_collection_rule_id = module.monitor.data_collection_rule_id
   description          = "Associate Management VM with Performance DCR"
+}
+
+# Assign 'Monitoring Metrics Publisher' role to VM Managed Identities
+resource "azurerm_role_assignment" "cicd_vm_monitoring_publisher" {
+  count                = var.cicd_agent_vm_count
+  scope                = module.cicd_agent_vm[count.index].vm_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = module.cicd_agent_vm[count.index].identity_principal_id # Get principal ID from VM module output
+}
+
+resource "azurerm_role_assignment" "monitoring_vm_monitoring_publisher" {
+  count                = var.monitoring_vm_count
+  scope                = module.monitoring_vm[count.index].vm_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = module.monitoring_vm[count.index].identity_principal_id
+}
+
+resource "azurerm_role_assignment" "management_vm_monitoring_publisher" {
+  count                = var.management_vm_count
+  scope                = module.management_vm[count.index].vm_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = module.management_vm[count.index].identity_principal_id
 } 

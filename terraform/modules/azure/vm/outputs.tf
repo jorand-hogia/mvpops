@@ -21,4 +21,9 @@ output "public_ip_address" {
 output "network_interface_id" {
   description = "The ID of the network interface"
   value       = azurerm_network_interface.vm_nic.id
+}
+
+output "identity_principal_id" {
+  description = "The Principal ID of the System Assigned Managed Identity for the VM."
+  value       = var.os_type == "linux" ? try(azurerm_linux_virtual_machine.vm[0].identity[0].principal_id, "") : try(azurerm_windows_virtual_machine.vm[0].identity[0].principal_id, "")
 } 
