@@ -13,11 +13,11 @@ provider "azurerm" {
   features {}
 }
 
-# Data source for the regional Network Watcher
-data "azurerm_network_watcher" "main" {
-  name                = "NetworkWatcher_${var.location}"
-  resource_group_name = "NetworkWatcherRG"
-}
+# Data source for the regional Network Watcher - REMOVED
+# data "azurerm_network_watcher" "main" {
+#   name                = "NetworkWatcher_${var.location}"
+#   resource_group_name = "NetworkWatcherRG"
+# }
 
 # Define resource group for VMs
 resource "azurerm_resource_group" "vm_rg" {
@@ -96,9 +96,9 @@ resource "azurerm_subnet_network_security_group_association" "vm_subnet_nsg_asso
 
 # Enable NSG Flow Logs
 resource "azurerm_network_watcher_flow_log" "vm_subnet_nsg_flowlog" {
-  # Find the default Network Watcher in the region
-  network_watcher_name = "NetworkWatcher_${azurerm_resource_group.vm_rg.location}"
-  resource_group_name  = "NetworkWatcherRG" # Default RG for Network Watchers
+  # Find the default Network Watcher in the region - REMOVED explicit reference
+  # network_watcher_name = "NetworkWatcher_${azurerm_resource_group.vm_rg.location}"
+  # resource_group_name  = "NetworkWatcherRG" # Default RG for Network Watchers
   
   name                       = "${azurerm_network_security_group.vm_subnet_nsg.name}-flowlog"
   network_security_group_id  = azurerm_network_security_group.vm_subnet_nsg.id
