@@ -51,4 +51,46 @@ resource "azurerm_monitor_action_group" "main" {
 # Required for VM Performance Metrics (INFRA-03) and Logs (LOG-02)
 # Placeholder - Configuration depends on specific metrics/logs needed
 # resource "azurerm_monitor_data_collection_rule" "vm_dcr" { ... }
-# resource "azurerm_monitor_data_collection_endpoint" "vm_dce" { ... } 
+# resource "azurerm_monitor_data_collection_endpoint" "vm_dce" { ... }
+
+# Data Collection Rule for standard VM performance metrics
+resource "azurerm_monitor_data_collection_rule" "vm_performance_dcr" {
+  name                = "${var.base_name}-vm-perf-dcr"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  # Use the Log Analytics Workspace deployed by this module as the destination
+  destinations {
+    log_analytics {
+      workspace_resource_id = azurerm_log_analytics_workspace.monitor_workspace.id
+      name                  = "la-${azurerm_log_analytics_workspace.monitor_workspace.name}" # Name must be unique within the DCR
+    }
+  }
+
+  # Define data sources (performance counters)
+  data_sources {
+    performance_counter {
+      streams = ["Microsoft-Perf"]
+      sampling_frequency_in_seconds = 60 # Collect every 60 seconds
+      counter_specifiers = [
+        # Memory
+        "\\Memory\\Available MBytes",
+        # CPU
+        "\\Processor Information(_Total)\\% Processor Time",
+        # Logical Disk (C:, D:, etc. for Windows; /, /mnt/* etc. for Linux)
+        "\\LogicalDisk(*)\\*",
+        # Network Interface
+        "\\Network Interface(*)\\*"
+        # Add other specific counters if needed
+      ]
+      name = "perfCounterDataSource" # Name must be unique within the DCR
+    }
+  }
+
+  # Define the data flow: send performance counters to Log Analytics
+  data_flow {
+    streams      = ["Microsoft-Perf"]
+    destinations = ["la-${azurerm_log_analytics_workspace.monitor_workspace.name}"]
+  }
+
+  tags = var.tags
+} 

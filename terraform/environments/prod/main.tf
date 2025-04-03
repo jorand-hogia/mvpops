@@ -162,6 +162,7 @@ module "monitor" {
   resource_group_name = azurerm_resource_group.vm_rg.name # Deploy in the same RG as VMs
   location            = azurerm_resource_group.vm_rg.location
   tags                = var.tags
+  base_name           = "mvpops-${var.environment}" # Base name for DCR, etc.
 
   log_analytics_workspace_name = "mvpops-${var.environment}-law"
   action_group_name            = "mvpops-${var.environment}-ag"
@@ -174,4 +175,26 @@ module "monitor" {
 
   # Keep VM Insights enabled (default in module)
   # enable_vm_insights = true 
+}
+
+# Associate VMs with the Data Collection Rule
+resource "azurerm_monitor_data_collection_rule_association" "cicd_agent_dcr_assoc" {
+  count                = var.cicd_agent_vm_count
+  target_resource_id   = module.cicd_agent_vm[count.index].vm_id
+  data_collection_rule_id = module.monitor.data_collection_rule_id
+  description          = "Associate CI/CD Agent VM with Performance DCR"
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "monitoring_vm_dcr_assoc" {
+  count                = var.monitoring_vm_count
+  target_resource_id   = module.monitoring_vm[count.index].vm_id
+  data_collection_rule_id = module.monitor.data_collection_rule_id
+  description          = "Associate Monitoring VM with Performance DCR"
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "management_vm_dcr_assoc" {
+  count                = var.management_vm_count
+  target_resource_id   = module.management_vm[count.index].vm_id
+  data_collection_rule_id = module.monitor.data_collection_rule_id
+  description          = "Associate Management VM with Performance DCR"
 } 

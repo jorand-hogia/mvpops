@@ -55,4 +55,9 @@ variable "email_receivers" {
 }
 
 # Add variables for other receiver types (webhook, sms, etc.) as needed
-# Add variables for Data Collection Rule configuration later 
+# Add variables for Data Collection Rule configuration later
+
+variable "base_name" {
+  description = "Base name prefix for resources created by the module (e.g., dcr name)."
+  type        = string
+} 
