@@ -324,65 +324,67 @@ resource "azurerm_monitor_data_collection_rule_association" "management_vm_dcr_a
 # }
 
 # Configure Network Connection Monitor
-resource "azurerm_network_connection_monitor" "main" {
-  name                 = "mvpops-${var.environment}-connection-monitor"
-  network_watcher_id   = data.azurerm_network_watcher.main.id
-  location             = azurerm_resource_group.vm_rg.location # Must match Network Watcher location
-  
-  endpoint {
-    name               = "cicdAgent1"
-    resource_id        = module.cicd_agent_vm[0].vm_id # Use resource_id (again...)
-  }
-
-  endpoint {
-    name               = "managementVm1"
-    resource_id        = module.management_vm[0].vm_id # Use resource_id (again...)
-  }
-  
-  endpoint {
-    name    = "googleHttp"
-    address = "google.com"
-  }
-
-  test_configuration {
-    name                = "sshInternalTest"
-    protocol            = "Tcp"
-    test_frequency_in_seconds = 60 # Check every minute
-    tcp_configuration {
-      port = 22
-    }
-  }
-  
-  test_configuration {
-    name                      = "httpExternalTest"
-    protocol                  = "Http"
-    test_frequency_in_seconds = 300 # Check every 5 minutes
-    http_configuration {
-      port               = 80
-      method             = "GET"
-      path               = "/"
-      prefer_https       = false # Test plain HTTP
-      request_header {
-        name  = "User-Agent"
-        value = "TerraformConnectionMonitor"
-      }
-      valid_status_code_ranges = ["200-299", "300-399"] # Accept redirects
-    }
-  }
-
-  test_group {
-    name                     = "internalSshConnectivity"
-    test_configuration_names = ["sshInternalTest"]
-    source_endpoints         = ["cicdAgent1"] # Use plural
-    destination_endpoints    = ["managementVm1"] # Use plural
-  }
-  
-  test_group {
-    name                       = "externalHttpConnectivity"
-    test_configuration_names   = ["httpExternalTest"]
-    source_endpoints           = ["managementVm1"] # Use plural
-    destination_endpoints      = ["googleHttp"] # Use plural
-  }
-  
-  tags = var.tags
-} 
+# Temporarily commented out due to inconsistent validation errors in provider v3.117.1
+# resource "azurerm_network_connection_monitor" "main" {
+#   name                 = "mvpops-${var.environment}-connection-monitor"
+#   network_watcher_id   = data.azurerm_network_watcher.main.id
+#   location             = azurerm_resource_group.vm_rg.location # Must match Network Watcher location
+#   # Removed output block - Linkage to LA is implicit or via Network Watcher
+#   
+#   endpoint {
+#     name               = "cicdAgent1"
+#     resource_id        = module.cicd_agent_vm[0].vm_id # Use resource_id (again...)
+#   }
+# 
+#   endpoint {
+#     name               = "managementVm1"
+#     resource_id        = module.management_vm[0].vm_id # Use resource_id (again...)
+#   }
+#   
+#   endpoint {
+#     name    = "googleHttp"
+#     address = "google.com"
+#   }
+# 
+#   test_configuration {
+#     name                = "sshInternalTest"
+#     protocol            = "Tcp"
+#     test_frequency_in_seconds = 60 # Check every minute
+#     tcp_configuration {
+#       port = 22
+#     }
+#   }
+#   
+#   test_configuration {
+#     name                      = "httpExternalTest"
+#     protocol                  = "Http"
+#     test_frequency_in_seconds = 300 # Check every 5 minutes
+#     http_configuration {
+#       port               = 80
+#       method             = "GET"
+#       path               = "/"
+#       prefer_https       = false # Test plain HTTP
+#       request_header {
+#         name  = "User-Agent"
+#         value = "TerraformConnectionMonitor"
+#       }
+#       valid_status_code_ranges = ["200-299", "300-399"] # Accept redirects
+#     }
+#   }
+# 
+#   test_group {
+#     name                     = "internalSshConnectivity"
+#     test_configuration_names = ["sshInternalTest"]
+#     source_endpoints         = ["cicdAgent1"] # Use plural (This was correct)
+#     destination_endpoints    = ["managementVm1"] # Use plural (This was correct)
+#   }
+#   
+#   test_group {
+#     name                       = "externalHttpConnectivity"
+#     test_configuration_names   = ["httpExternalTest"]
+#     source_endpoints           = ["managementVm1"] # Use plural (This was correct)
+#     destination_endpoints      = ["googleHttp"] # Use plural (This was correct)
+#   }
+#   
+#   tags = var.tags
+# } 
