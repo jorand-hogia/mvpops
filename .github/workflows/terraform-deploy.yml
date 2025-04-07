@@ -136,14 +136,19 @@ jobs:
             --location "swedencentral" \
             --tags Environment=Production Service=Terraform team=Platform
 
-          # Format storage account name to meet Azure requirements
-          # Convert to lowercase, remove special characters, limit to 24 chars
+          # Format storage account name
           STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
           echo "Using storage account name: $STORAGE_ACCOUNT_NAME"
 
           # Validate storage account name
+          if [ -z "$STORAGE_ACCOUNT_NAME" ]; then
+            echo "Error: Storage account name is empty"
+            exit 1
+          fi
+
           if [[ ! $STORAGE_ACCOUNT_NAME =~ ^[a-z0-9]{3,24}$ ]]; then
             echo "Error: Storage account name must be between 3 and 24 characters and contain only lowercase letters and numbers"
+            echo "Got: $STORAGE_ACCOUNT_NAME"
             exit 1
           fi
 
