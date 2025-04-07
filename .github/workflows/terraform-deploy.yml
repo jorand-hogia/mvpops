@@ -107,6 +107,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          lfs: true
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -179,27 +182,27 @@ jobs:
 
       - name: Terraform Plan
         run: |
-          # First move to the repository root to get correct paths
-          REPO_ROOT="$(git rev-parse --show-toplevel)"
-          echo "Repository root: $REPO_ROOT"
+          # Debug repository structure
+          echo "Workspace directory structure:"
+          cd $GITHUB_WORKSPACE
+          ls -R terraform/
           
-          # Construct config path relative to repository root
-          CONFIG_PATH="$REPO_ROOT/terraform/config/infrastructure.tfvars"
+          # Use relative path from workspace root
+          CONFIG_PATH="$GITHUB_WORKSPACE/terraform/config/infrastructure.tfvars"
           echo "Using config file at: $CONFIG_PATH"
-          
-          # Debug directory structure
-          echo "Listing repository structure:"
-          ls -R "$REPO_ROOT/terraform"
           
           # Verify config file exists
           if [ ! -f "$CONFIG_PATH" ]; then
             echo "Error: Config file not found at $CONFIG_PATH"
             echo "Current directory: $(pwd)"
-            echo "Directory contents:"
-            ls -la
+            echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+            echo "Directory contents of terraform/config:"
+            ls -la "$GITHUB_WORKSPACE/terraform/config" || echo "Config directory not found"
             exit 1
           fi
           
+          # Return to working directory and run plan
+          cd ${{ github.workspace }}/terraform/environments/prod
           terraform plan \
             -var-file="$CONFIG_PATH" \
             -out=tfplan
