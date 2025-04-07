@@ -179,14 +179,24 @@ jobs:
 
       - name: Terraform Plan
         run: |
-          # Get absolute path to config file since we're in the environments/prod directory
-          CONFIG_PATH="$(pwd)/../../config/infrastructure.tfvars"
+          # First move to the repository root to get correct paths
+          REPO_ROOT="$(git rev-parse --show-toplevel)"
+          echo "Repository root: $REPO_ROOT"
+          
+          # Construct config path relative to repository root
+          CONFIG_PATH="$REPO_ROOT/terraform/config/infrastructure.tfvars"
           echo "Using config file at: $CONFIG_PATH"
+          
+          # Debug directory structure
+          echo "Listing repository structure:"
+          ls -R "$REPO_ROOT/terraform"
           
           # Verify config file exists
           if [ ! -f "$CONFIG_PATH" ]; then
             echo "Error: Config file not found at $CONFIG_PATH"
-            ls -la "$(pwd)/../../config/"
+            echo "Current directory: $(pwd)"
+            echo "Directory contents:"
+            ls -la
             exit 1
           fi
           
