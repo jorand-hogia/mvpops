@@ -143,14 +143,24 @@ jobs:
           # Validate storage account name
           if [ -z "$STORAGE_ACCOUNT_NAME" ]; then
             echo "Error: Storage account name is empty"
+            echo "Original value: $STATE_SA"
             exit 1
           fi
 
           if [[ ! $STORAGE_ACCOUNT_NAME =~ ^[a-z0-9]{3,24}$ ]]; then
             echo "Error: Storage account name must be between 3 and 24 characters and contain only lowercase letters and numbers"
             echo "Got: $STORAGE_ACCOUNT_NAME"
+            echo "Original value: $STATE_SA"
             exit 1
           fi
+
+          # Debug information
+          echo "Debug information:"
+          echo "STATE_SA: $STATE_SA"
+          echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
+          echo "STATE_CONTAINER: $STATE_CONTAINER"
+          echo "STATE_KEY: $STATE_KEY"
+          echo "STATE_RG: $STATE_RG"
 
           # Create storage account if it doesn't exist
           echo "Creating storage account $STORAGE_ACCOUNT_NAME if it doesn't exist..."
