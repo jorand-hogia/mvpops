@@ -4,7 +4,7 @@ module "grafana_vm" {
   source = "../../modules/azure/vm" # Corrected path
 
   vm_name             = "vm-grafana-prod-01"  # Use vm_name parameter
-  vm_size             = "Standard_E4s_v3"    # From implementation plan VM-02
+  vm_size             = "Standard_B2ms"    # Changed from Standard_E4s_v3 to stay within quota
   resource_group_name = var.resource_group_name # Assuming an environment variable exists for RG name
   location            = var.location           # Assuming an environment variable exists for location
   subnet_id           = azurerm_subnet.vm_subnet.id # Reference subnet defined in main.tf
