@@ -409,4 +409,298 @@ For support, please open an issue in the GitHub repository or contact the DevOps
 3. **Provide Feedback**
    - Document challenges
    - Suggest improvements
-   - Share success stories 
+   - Share success stories
+
+## Configuration Management
+
+### Configuration Structure
+```
+terraform/
+├── config/
+│   ├── infrastructure.tfvars    # Base infrastructure configuration
+│   └── environments/
+│       ├── dev.tfvars          # Development environment settings
+│       └── prod.tfvars         # Production environment settings
+```
+
+### Configuration Files
+
+1. **Base Infrastructure (infrastructure.tfvars)**
+   - Network configuration
+   - Firewall rules
+   - Server specifications
+   - Monitoring setup
+   - Backup policies
+
+2. **Environment-Specific (dev.tfvars, prod.tfvars)**
+   - Environment settings
+   - Resource naming
+   - Network settings
+   - Server configurations
+   - Security settings
+   - High availability settings
+
+### Using Configuration Files
+
+```bash
+# For development environment
+terraform plan -var-file="config/environments/dev.tfvars"
+
+# For production environment
+terraform plan -var-file="config/environments/prod.tfvars"
+```
+
+### Configuration Best Practices
+
+1. **Naming Conventions**
+   - Use consistent prefixes
+   - Include environment in names
+   - Follow Azure naming guidelines
+
+2. **Network Design**
+   - Separate subnets for different tiers
+   - Use appropriate CIDR ranges
+   - Implement network security groups
+
+3. **Security Settings**
+   - Enable network watcher
+   - Configure firewall rules
+   - Set up bastion host
+   - Implement DDoS protection
+
+4. **High Availability**
+   - Use availability sets
+   - Enable zone redundancy
+   - Configure geo-replication
+   - Set up failover
+
+5. **Monitoring and Backup**
+   - Configure retention periods
+   - Set up alert rules
+   - Define backup schedules
+   - Implement disaster recovery
+
+### Updating Configuration
+
+1. **Development Environment**
+   - Test changes in dev first
+   - Use smaller instance sizes
+   - Enable debugging features
+   - Shorter retention periods
+
+2. **Production Environment**
+   - Larger instance sizes
+   - High availability
+   - Longer retention periods
+   - Strict security rules
+
+## Environment Deployment Control
+
+### Configuration
+The deployment of environments can be controlled through the `infrastructure.tfvars` file:
+
+```hcl
+deployment = {
+  environments = {
+    dev = {
+      enabled = false  # Set to true when ready to deploy dev environment
+    }
+    prod = {
+      enabled = true   # Always enabled for production
+    }
+  }
+}
+```
+
+### Usage
+
+1. **Enable/Disable Environments**
+   - Set `enabled = true` to deploy an environment
+   - Set `enabled = false` to prevent deployment
+   - Changes take effect on next `terraform apply`
+
+2. **Current Configuration**
+   - Production: Always enabled
+   - Development: Disabled by default
+   - Can be enabled when resources are available
+
+3. **Deploying Environments**
+   ```bash
+   # Deploy only enabled environments
+   terraform apply -var-file="config/infrastructure.tfvars"
+   ```
+
+4. **Planning Deployment**
+   ```bash
+   # See what will be deployed
+   terraform plan -var-file="config/infrastructure.tfvars"
+   ```
+
+### Best Practices
+
+1. **Resource Management**
+   - Keep dev environment disabled when not needed
+   - Enable only when actively developing
+   - Disable when development is complete
+
+2. **Cost Control**
+   - Environments consume resources only when enabled
+   - Disable unused environments to save costs
+   - Monitor resource usage regularly
+
+3. **Security**
+   - Production always remains enabled
+   - Development can be disabled for security
+   - Access controls remain in place
+
+## Static IP Configuration
+
+### IP Address Management
+The platform uses static IP addresses for all servers to ensure consistent connectivity:
+
+```hcl
+ip_addresses = {
+  app_server = {
+    private_ip = "10.0.1.10"  # Static private IP for app server
+    public_ip  = ""           # Leave empty for no public IP
+  }
+  db_server = {
+    private_ip = "10.0.2.10"  # Static private IP for db server
+    public_ip  = ""           # Leave empty for no public IP
+  }
+  bastion = {
+    private_ip = "10.0.3.10"  # Static private IP for bastion
+    public_ip  = "20.0.0.10"  # Static public IP for bastion
+  }
+}
+```
+
+### IP Address Rules
+1. **Private IPs**
+   - Must be within subnet range
+   - Must be unique within the VNet
+   - Should follow a consistent numbering scheme
+
+2. **Public IPs**
+   - Only assigned to bastion host
+   - Other servers use private IPs only
+   - Access through bastion host
+
+3. **IP Planning**
+   - App Server: 10.0.1.10
+   - DB Server: 10.0.2.10
+   - Bastion: 10.0.3.10
+
+### Changing IP Addresses
+1. **Private IPs**
+   - Update in `ip_addresses` configuration
+   - Run `terraform plan` to verify changes
+   - Apply changes with `terraform apply`
+
+2. **Public IPs**
+   - Update in `ip_addresses` configuration
+   - Ensure IP is available in Azure
+   - Update DNS records if needed
+
+### Best Practices
+1. **IP Documentation**
+   - Document all IP assignments
+   - Keep IP list up to date
+   - Include in network diagrams
+
+2. **IP Security**
+   - Use private IPs where possible
+   - Limit public IP exposure
+   - Implement proper firewall rules
+
+3. **IP Management**
+   - Reserve IP ranges for future use
+   - Plan for growth
+   - Document IP allocation
+
+## Server Scheduling
+
+### Configuration
+The platform includes automatic server scheduling to optimize costs during non-office hours:
+
+```hcl
+scheduling = {
+  office_hours = {
+    timezone    = "Europe/Stockholm"  # Timezone for scheduling
+    start_time  = "08:00"            # Office hours start (24h format)
+    end_time    = "17:00"            # Office hours end (24h format)
+    weekdays    = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+  }
+  servers = {
+    app_server = {
+      auto_shutdown = true    # Enable auto-shutdown
+      start_delay   = 15      # Minutes before office hours to start
+      stop_delay    = 15      # Minutes after office hours to stop
+    }
+    db_server = {
+      auto_shutdown = true    # Enable auto-shutdown
+      start_delay   = 15      # Minutes before office hours to start
+      stop_delay    = 15      # Minutes after office hours to stop
+    }
+    bastion = {
+      auto_shutdown = false   # Keep bastion running 24/7
+      start_delay   = 0       # No delay needed
+      stop_delay    = 0       # No delay needed
+    }
+  }
+}
+```
+
+### Scheduling Rules
+1. **Office Hours**
+   - Default: 08:00 - 17:00
+   - Monday to Friday
+   - Configurable timezone
+   - Adjustable start/end times
+
+2. **Server Behavior**
+   - App and DB servers auto-shutdown outside office hours
+   - Bastion host runs 24/7
+   - Configurable start/stop delays
+   - Individual control per server
+
+3. **Cost Optimization**
+   - Servers only run during office hours
+   - Automatic shutdown after hours
+   - Automatic startup before office hours
+   - Significant cost savings
+
+### Changing Schedule
+1. **Office Hours**
+   - Update `start_time` and `end_time`
+   - Modify `weekdays` list
+   - Change `timezone` if needed
+
+2. **Server Settings**
+   - Enable/disable `auto_shutdown`
+   - Adjust `start_delay` and `stop_delay`
+   - Configure per server
+
+3. **Applying Changes**
+   - Run `terraform plan` to verify
+   - Apply with `terraform apply`
+   - Changes take effect immediately
+
+### Best Practices
+1. **Scheduling Strategy**
+   - Keep bastion host running 24/7
+   - Allow buffer time for startup/shutdown
+   - Consider maintenance windows
+   - Plan for emergency access
+
+2. **Cost Management**
+   - Monitor actual usage patterns
+   - Adjust schedule based on needs
+   - Consider timezone differences
+   - Plan for exceptions
+
+3. **Maintenance**
+   - Schedule updates during office hours
+   - Plan for emergency maintenance
+   - Document schedule changes
+   - Monitor automation reliability 
