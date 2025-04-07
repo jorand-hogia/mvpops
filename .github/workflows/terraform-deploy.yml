@@ -208,7 +208,8 @@ jobs:
           
           # Check if there are any existing lock files that need to be removed
           echo "Checking for stale lock files..."
-          if az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv | grep -q "true"; then
+          LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
+          if [ "$LOCK_EXISTS" = "true" ]; then
             echo "Lock file exists for state. This might be a stale lock from a previous run."
             echo "Lock details:"
             az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "{lastModified:properties.lastModified, size:properties.contentLength}" -o json
@@ -274,7 +275,8 @@ jobs:
           # Get the storage account key
           STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "$STORAGE_ACCOUNT_NAME" --resource-group "$STATE_RG" --query "[0].value" -o tsv)
           
-          if az storage blob exists --container-name "$STATE_CONTAINER" --name "$STATE_KEY" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv | grep -q "true"; then
+          STATE_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "$STATE_KEY" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
+          if [ "$STATE_EXISTS" = "true" ]; then
             echo "State file exists in Azure Storage. Attempting to download for inspection..."
             # Create a temp directory
             TEMP_DIR=$(mktemp -d)
@@ -282,15 +284,22 @@ jobs:
             az storage blob download --container-name "$STATE_CONTAINER" --name "$STATE_KEY" --file "$TEMP_DIR/terraform.tfstate" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
             # Show summary of state file
             echo "State file summary:"
-            cat "$TEMP_DIR/terraform.tfstate" | jq 'del(.resources[].instances[].attributes)' || echo "Could not parse state file with jq"
+            cat "$TEMP_DIR/terraform.tfstate" | jq 'del(.resources[].instances[].attributes)' 2>/dev/null || echo "Could not parse state file with jq"
+            
             # Check for existing locks
             echo "Checking for state locks..."
-            az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv
-            if [ $? -eq 0 ]; then
+            LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
+            if [ "$LOCK_EXISTS" = "true" ]; then
               echo "Lock file exists for state. Getting details..."
-              az storage blob download --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --file "$TEMP_DIR/terraform.tfstate.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
-              cat "$TEMP_DIR/terraform.tfstate.lock" || echo "Could not read lock file"
-              echo "Consider removing the lock file if no Terraform operations are currently running."
+              # Use -f flag for Azure CLI to fail silently
+              az storage blob download --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --file "$TEMP_DIR/terraform.tfstate.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" || echo "Could not download lock file, it may have been removed already"
+              
+              if [ -f "$TEMP_DIR/terraform.tfstate.lock" ]; then
+                cat "$TEMP_DIR/terraform.tfstate.lock" || echo "Could not read lock file"
+                echo "Consider removing the lock file if no Terraform operations are currently running."
+              else
+                echo "Lock file could not be downloaded, it may have been removed between checking and download."
+              fi
             else
               echo "No lock file found for state."
             fi
@@ -336,7 +345,8 @@ jobs:
           
           # Check for existing lock and remove if necessary
           echo "Checking for existing state lock before initialization..."
-          if az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv | grep -q "true"; then
+          LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
+          if [ "$LOCK_EXISTS" = "true" ]; then
             echo "WARNING: Lock file exists for state. This might be a stale lock."
             echo "Lock details:"
             az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "{lastModified:properties.lastModified, size:properties.contentLength}" -o json
@@ -457,7 +467,8 @@ jobs:
           
           # Check for existing lock and remove if necessary
           echo "Checking for existing state lock before initialization..."
-          if az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv | grep -q "true"; then
+          LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
+          if [ "$LOCK_EXISTS" = "true" ]; then
             echo "WARNING: Lock file exists for state. This might be a stale lock."
             echo "Lock details:"
             az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "{lastModified:properties.lastModified, size:properties.contentLength}" -o json
