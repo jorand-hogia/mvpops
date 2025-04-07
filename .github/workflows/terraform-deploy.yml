@@ -133,10 +133,21 @@ jobs:
             --location "swedencentral" \
             --tags Environment=Production Service=Terraform team=Platform
 
+          # Format storage account name to meet Azure requirements
+          # Convert to lowercase, remove special characters, limit to 24 chars
+          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
+          echo "Using storage account name: $STORAGE_ACCOUNT_NAME"
+
+          # Validate storage account name
+          if [[ ! $STORAGE_ACCOUNT_NAME =~ ^[a-z0-9]{3,24}$ ]]; then
+            echo "Error: Storage account name must be between 3 and 24 characters and contain only lowercase letters and numbers"
+            exit 1
+          fi
+
           # Create storage account if it doesn't exist
-          echo "Creating storage account $STATE_SA if it doesn't exist..."
+          echo "Creating storage account $STORAGE_ACCOUNT_NAME if it doesn't exist..."
           az storage account create \
-            --name "$STATE_SA" \
+            --name "$STORAGE_ACCOUNT_NAME" \
             --resource-group "$STATE_RG" \
             --location "swedencentral" \
             --sku "Standard_LRS" \
@@ -148,13 +159,16 @@ jobs:
           echo "Creating container $STATE_CONTAINER if it doesn't exist..."
           az storage container create \
             --name "$STATE_CONTAINER" \
-            --account-name "$STATE_SA" \
+            --account-name "$STORAGE_ACCOUNT_NAME" \
             --auth-mode login
 
       - name: Terraform Init
         run: |
+          # Format storage account name consistently with creation step
+          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
+          
           terraform init \
-            -backend-config="storage_account_name=$STATE_SA" \
+            -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
             -backend-config="container_name=$STATE_CONTAINER" \
             -backend-config="key=$STATE_KEY" \
             -backend-config="resource_group_name=$STATE_RG" \
