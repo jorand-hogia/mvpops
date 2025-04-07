@@ -11,15 +11,13 @@ variable "environment" {
 }
 
 variable "resource_group_name" {
-  description = "The name of the main resource group for the Production environment."
+  description = "Name of the resource group"
   type        = string
-  # No default - should be provided via tfvars or environment variables
 }
 
 variable "state_resource_group_name" {
   description = "Name of the resource group for Terraform state"
   type        = string
-  default     = "JP-test-tf-state-rg"
 }
 
 variable "tags" {
