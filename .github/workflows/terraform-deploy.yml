@@ -124,6 +124,33 @@ jobs:
               "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
             }
 
+      - name: Create Azure Storage for Terraform State
+        run: |
+          # Create resource group if it doesn't exist
+          echo "Creating resource group $STATE_RG if it doesn't exist..."
+          az group create \
+            --name "$STATE_RG" \
+            --location "swedencentral" \
+            --tags Environment=Production Service=Terraform
+
+          # Create storage account if it doesn't exist
+          echo "Creating storage account $STATE_SA if it doesn't exist..."
+          az storage account create \
+            --name "$STATE_SA" \
+            --resource-group "$STATE_RG" \
+            --location "swedencentral" \
+            --sku "Standard_LRS" \
+            --encryption-services blob \
+            --min-tls-version "TLS1_2" \
+            --allow-blob-public-access false
+
+          # Create container if it doesn't exist
+          echo "Creating container $STATE_CONTAINER if it doesn't exist..."
+          az storage container create \
+            --name "$STATE_CONTAINER" \
+            --account-name "$STATE_SA" \
+            --auth-mode login
+
       - name: Terraform Init
         run: |
           terraform init \
