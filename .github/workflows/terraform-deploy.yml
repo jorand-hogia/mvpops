@@ -131,7 +131,7 @@ jobs:
           az group create \
             --name "$STATE_RG" \
             --location "swedencentral" \
-            --tags Environment=Production Service=Terraform
+            --tags Environment=Production Service=Terraform team=Platform
 
           # Create storage account if it doesn't exist
           echo "Creating storage account $STATE_SA if it doesn't exist..."
