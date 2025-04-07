@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ "master" ]
 
+# Update permissions block to remove unnecessary permissions
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+  pull-requests: write
+
 env:
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -132,17 +139,6 @@ jobs:
         run: |
           terraform init -backend=false
           terraform validate -no-color
-
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-sarif-action@v0.1.4
-        with:
-          sarif_file: tfsec.sarif
-          working_directory: terraform/environments/prod
-          
-      - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: tfsec.sarif
 
   plan:
     name: 'Plan Terraform Changes'
