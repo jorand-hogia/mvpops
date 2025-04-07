@@ -137,6 +137,7 @@ jobs:
             --tags Environment=Production Service=Terraform team=Platform
 
           # Format storage account name
+          ORIGINAL_SA="$STATE_SA"
           STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
           echo "Using storage account name: $STORAGE_ACCOUNT_NAME"
 
@@ -154,6 +155,18 @@ jobs:
             exit 1
           fi
 
+          # Check if name is already taken and generate a unique name if needed
+          ACCOUNT_EXISTS=$(az storage account check-name --name "$STORAGE_ACCOUNT_NAME" --query "nameAvailable" -o tsv)
+          if [ "$ACCOUNT_EXISTS" == "false" ]; then
+            echo "Warning: Storage account name '$STORAGE_ACCOUNT_NAME' is already taken globally in Azure."
+            # Add a random suffix to make it unique
+            RANDOM_SUFFIX=$(date +%s | cut -c6-10)
+            STORAGE_ACCOUNT_NAME="${STORAGE_ACCOUNT_NAME}${RANDOM_SUFFIX}"
+            # Make sure we don't exceed the 24 character limit
+            STORAGE_ACCOUNT_NAME=$(echo "$STORAGE_ACCOUNT_NAME" | cut -c1-24)
+            echo "Using alternative storage account name: $STORAGE_ACCOUNT_NAME"
+          fi
+          
           # Debug information
           echo "Debug information:"
           echo "STATE_SA: $STATE_SA"
@@ -162,10 +175,8 @@ jobs:
           echo "STATE_KEY: $STATE_KEY"
           echo "STATE_RG: $STATE_RG"
           
-          # Use a temporary hardcoded name for testing
-          # Comment out the line below after testing is complete
-          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
+          # Set the storage account name as an output for later steps
+          echo "STORAGE_ACCOUNT_NAME=$STORAGE_ACCOUNT_NAME" >> $GITHUB_ENV
 
           # Create storage account if it doesn't exist
           echo "Creating storage account $STORAGE_ACCOUNT_NAME if it doesn't exist..."
@@ -187,18 +198,14 @@ jobs:
 
       - name: Terraform Init
         run: |
-          # Format storage account name consistently with creation step
-          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
+          # Use the storage account name from the previous step
+          # This ensures we use the potentially modified name if the original was taken
+          STORAGE_ACCOUNT_NAME=${{ env.STORAGE_ACCOUNT_NAME }}
           
           # Debug output right before terraform init
           echo "Debug right before terraform init:"
           echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
           echo "STATE_SA original value: $STATE_SA"
-          
-          # Use a temporary hardcoded name for testing
-          # Comment out the line below after testing is complete
-          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
           
           terraform init \
             -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
@@ -246,16 +253,11 @@ jobs:
           
           # Debug output right before second terraform init
           echo "Debug right before second terraform init:"
-          echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
+          echo "STORAGE_ACCOUNT_NAME: ${{ env.STORAGE_ACCOUNT_NAME }}"
           echo "STATE_SA original value: $STATE_SA"
           
-          # Use a temporary hardcoded name for testing
-          # Comment out the line below after testing is complete
-          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
-          
           terraform init -migrate-state \
-            -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
+            -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=$STATE_CONTAINER" \
             -backend-config="key=$STATE_KEY" \
             -backend-config="resource_group_name=$STATE_RG" \
@@ -264,7 +266,7 @@ jobs:
             -backend-config="client_id=$ARM_CLIENT_ID" \
             -backend-config="client_secret=$ARM_CLIENT_SECRET" || \
           terraform init -reconfigure \
-            -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
+            -backend-config="storage_account_name=${{ env.STORAGE_ACCOUNT_NAME }}" \
             -backend-config="container_name=$STATE_CONTAINER" \
             -backend-config="key=$STATE_KEY" \
             -backend-config="resource_group_name=$STATE_RG" \
@@ -337,17 +339,12 @@ jobs:
       - name: Terraform Init
         run: |
           # Format storage account name for consistency
-          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
+          STORAGE_ACCOUNT_NAME=${{ env.STORAGE_ACCOUNT_NAME }}
           
           # Debug output right before terraform init
           echo "Debug in Apply step:"
           echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
           echo "STATE_SA original value: $STATE_SA"
-          
-          # Use a temporary hardcoded name for testing
-          # Comment out the line below after testing is complete
-          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
           
           terraform init \
             -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
