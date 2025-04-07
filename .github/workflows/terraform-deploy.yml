@@ -188,7 +188,7 @@ jobs:
           ls -R terraform/
           
           # Use relative path from workspace root
-          CONFIG_PATH="$GITHUB_WORKSPACE/terraform/config/infrastructure.tfvars"
+          CONFIG_PATH="terraform/config/infrastructure.tfvars"
           echo "Using config file at: $CONFIG_PATH"
           
           # Verify config file exists
@@ -197,14 +197,14 @@ jobs:
             echo "Current directory: $(pwd)"
             echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
             echo "Directory contents of terraform/config:"
-            ls -la "$GITHUB_WORKSPACE/terraform/config" || echo "Config directory not found"
+            ls -la "terraform/config" || echo "Config directory not found"
             exit 1
           fi
           
           # Return to working directory and run plan
-          cd ${{ github.workspace }}/terraform/environments/prod
+          cd terraform/environments/prod
           terraform plan \
-            -var-file="$CONFIG_PATH" \
+            -var-file="../../$CONFIG_PATH" \
             -out=tfplan
 
       - name: Upload Plan
