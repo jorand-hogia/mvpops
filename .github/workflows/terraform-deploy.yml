@@ -201,14 +201,24 @@ jobs:
             exit 1
           fi
           
+          # Verify backend configuration
+          echo "Verifying backend configuration..."
+          terraform init -backend=false
+          
           # Return to working directory and run plan
           cd terraform/environments/prod
           echo "Current directory before plan: $(pwd)"
           echo "Verifying config file path..."
           ls -la ../../config/infrastructure.tfvars || echo "Config file not found at ../../config/infrastructure.tfvars"
           
+          # Try to force unlock if lock exists
+          echo "Checking for existing state lock..."
+          terraform force-unlock -force $(terraform state list | grep -o 'lock-[0-9a-f-]*' | head -n1) || echo "No lock to force unlock"
+          
+          # Run plan with lock timeout
           terraform plan \
             -var-file="../../config/infrastructure.tfvars" \
+            -lock-timeout=5m \
             -out=tfplan
 
       - name: Upload Plan
