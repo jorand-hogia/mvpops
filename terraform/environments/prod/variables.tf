@@ -42,7 +42,7 @@ variable "cicd_agent_vm_count" {
 variable "monitoring_vm_count" {
   description = "Number of monitoring VMs to create"
   type        = number
-  default     = 1
+  default     = 0
 }
 
 variable "management_vm_count" {
