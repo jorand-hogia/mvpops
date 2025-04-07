@@ -203,8 +203,12 @@ jobs:
           
           # Return to working directory and run plan
           cd terraform/environments/prod
+          echo "Current directory before plan: $(pwd)"
+          echo "Verifying config file path..."
+          ls -la ../../config/infrastructure.tfvars || echo "Config file not found at ../../config/infrastructure.tfvars"
+          
           terraform plan \
-            -var-file="../../$CONFIG_PATH" \
+            -var-file="../../config/infrastructure.tfvars" \
             -out=tfplan
 
       - name: Upload Plan
