@@ -179,8 +179,19 @@ jobs:
 
       - name: Terraform Plan
         run: |
+          # Get absolute path to config file since we're in the environments/prod directory
+          CONFIG_PATH="$(pwd)/../../config/infrastructure.tfvars"
+          echo "Using config file at: $CONFIG_PATH"
+          
+          # Verify config file exists
+          if [ ! -f "$CONFIG_PATH" ]; then
+            echo "Error: Config file not found at $CONFIG_PATH"
+            ls -la "$(pwd)/../../config/"
+            exit 1
+          fi
+          
           terraform plan \
-            -var-file="../../config/infrastructure.tfvars" \
+            -var-file="$CONFIG_PATH" \
             -out=tfplan
 
       - name: Upload Plan
