@@ -58,41 +58,35 @@ resource "azurerm_monitor_data_collection_rule" "vm_performance_dcr" {
   name                = "${var.base_name}-vm-perf-dcr"
   resource_group_name = var.resource_group_name
   location            = var.location
-  # Use the Log Analytics Workspace deployed by this module as the destination
+
   destinations {
     log_analytics {
       workspace_resource_id = azurerm_log_analytics_workspace.monitor_workspace.id
-      name                  = "la-${azurerm_log_analytics_workspace.monitor_workspace.name}" # Name must be unique within the DCR
+      name                  = "la-${azurerm_log_analytics_workspace.monitor_workspace.name}"
     }
   }
 
-  # Define data sources (performance counters)
   data_sources {
     performance_counter {
-      streams = ["Microsoft-Perf"]
-      sampling_frequency_in_seconds = 60 # Collect every 60 seconds
+      streams                       = ["Microsoft-Perf"]
+      sampling_frequency_in_seconds = 60
       counter_specifiers = [
-        # Memory
         "\\Memory\\Available MBytes",
-        # CPU
         "\\Processor Information(_Total)\\% Processor Time",
-        # Logical Disk (C:, D:, etc. for Windows; /, /mnt/* etc. for Linux)
         "\\LogicalDisk(*)\\*",
-        # Network Interface
         "\\Network Interface(*)\\*"
-        # Add other specific counters if needed
       ]
-      name = "perfCounterDataSource" # Name must be unique within the DCR
+      name = "perfCounterDataSource"
     }
   }
 
-  # Define the data flow: send performance counters to Log Analytics
   data_flow {
     streams      = ["Microsoft-Perf"]
     destinations = ["la-${azurerm_log_analytics_workspace.monitor_workspace.name}"]
   }
 
-  tags = var.tags
+  description = "Data collection rule for VM performance metrics"
+  tags        = var.tags
 }
 
 # Activity Log Alert for VM Resource Health (Unavailable)

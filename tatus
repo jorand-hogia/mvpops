@@ -1,0 +1,8 @@
+[33mcommit d16d54ab15fb2ef9b3f657a3b4f352bbaa642a3a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: JorgenA <jorgen.andersson@hogia.se>
+Date:   Mon Apr 7 10:34:52 2025 +0200
+
+    Add server scheduling configuration and cost optimization details
+
+ README.md | 296 [32m+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++[m[31m-[m
+ 1 file changed, 295 insertions(+), 1 deletion(-)
