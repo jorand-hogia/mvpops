@@ -164,8 +164,8 @@ jobs:
           
           # Use a temporary hardcoded name for testing
           # Comment out the line below after testing is complete
-          STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
+          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
+          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
 
           # Create storage account if it doesn't exist
           echo "Creating storage account $STORAGE_ACCOUNT_NAME if it doesn't exist..."
@@ -197,8 +197,8 @@ jobs:
           
           # Use a temporary hardcoded name for testing
           # Comment out the line below after testing is complete
-          STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
+          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
+          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
           
           terraform init \
             -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
@@ -251,8 +251,8 @@ jobs:
           
           # Use a temporary hardcoded name for testing
           # Comment out the line below after testing is complete
-          STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
+          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
+          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
           
           terraform init -migrate-state \
             -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
@@ -346,8 +346,8 @@ jobs:
           
           # Use a temporary hardcoded name for testing
           # Comment out the line below after testing is complete
-          STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
+          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
+          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
           
           terraform init \
             -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
