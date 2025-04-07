@@ -1,0 +1,4 @@
+resource_group_name  = "tf-state-rg"  # Replace with your STATE_RG value
+storage_account_name = "peter35225"  # Your STATE_SA value
+container_name       = "tfstate"     # Replace with your STATE_CONTAINER value
+key                  = "terraform.tfstate" # Replace with your STATE_KEY value 

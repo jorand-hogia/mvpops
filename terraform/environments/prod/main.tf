@@ -6,7 +6,10 @@ terraform {
     }
   }
   
+  # Original backend configuration
   backend "azurerm" {}
+  # Temporarily using local backend for testing
+  # backend "local" {}
 }
 
 provider "azurerm" {
