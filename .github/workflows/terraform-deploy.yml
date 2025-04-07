@@ -1,65 +1,69 @@
-name: Terraform Infrastructure Management
+name: 'Terraform Deploy'
 
 on:
   push:
-    branches: [ main, master ]
-    paths:
-      - 'terraform/**'
+    branches: [ "master" ]
   pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'terraform/**'
-  # Allow manual triggering of workflow
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - production
-      apply:
-        description: 'Apply changes'
-        required: true
-        default: false
-        type: boolean
-
-# Add permissions block for GitHub token
-permissions:
-  contents: write
-  pull-requests: write
-  security-events: write
-  id-token: write
+    branches: [ "master" ]
 
 env:
-  # Authentication variables
-  ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-  ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-  ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-  ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-  
-  # Terraform backend configuration
-  TF_STORAGE_ACCOUNT_NAME: "mvpopstfstate"
-  TF_CONTAINER_NAME: "tfstate"
-  
-  # Terraform version
-  TF_VERSION: "1.5.7"
-  
-  # Dynamic environment variables
-  TF_VAR_environment: ${{ github.event.inputs.environment || 'production' }}
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
   TF_VAR_vm_ssh_public_key: ${{ secrets.TF_VAR_VM_SSH_PUBLIC_KEY }}
-  TF_VAR_location: "swedencentral"
-  TF_VAR_resource_group_name: "JP-test"
-  ENVIRONMENT: prod
-  LOCATION: northeurope
-  RESOURCE_GROUP_PROD: ${{ secrets.RESOURCE_GROUP_PROD }}
   STATE_SA: ${{ secrets.STATE_SA }}
   STATE_CONTAINER: ${{ secrets.STATE_CONTAINER }}
   STATE_KEY: ${{ secrets.STATE_KEY }}
   STATE_RG: ${{ secrets.STATE_RG }}
 
 jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: "1.5.7"
+
+    - name: 'Login via Azure CLI'
+      uses: azure/login@v1
+      with:
+        creds: |
+          {
+            "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+            "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+            "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+            "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+          }
+
+    - name: 'Terraform Init'
+      run: |
+        terraform init \
+          -backend-config="storage_account_name=$STATE_SA" \
+          -backend-config="container_name=$STATE_CONTAINER" \
+          -backend-config="key=$STATE_KEY" \
+          -backend-config="resource_group_name=$STATE_RG" \
+          -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID" \
+          -backend-config="tenant_id=$ARM_TENANT_ID" \
+          -backend-config="client_id=$ARM_CLIENT_ID" \
+          -backend-config="client_secret=$ARM_CLIENT_SECRET"
+
+    - name: 'Terraform Plan'
+      run: |
+        terraform plan \
+          -var-file="config/infrastructure.tfvars" \
+          -out=tfplan
+
+    - name: 'Terraform Apply'
+      if: github.ref == 'refs/heads/master'
+      run: terraform apply -auto-approve tfplan
+
   verify-credentials:
     name: 'Verify Azure Credentials'
     runs-on: ubuntu-latest

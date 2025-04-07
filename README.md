@@ -28,7 +28,7 @@ This repository contains a modular DevOps platform implementation that can be de
 - GitHub account with repository access
 - Required environment variables (see `.env.example`)
 
-## Getting Started
+## Getting Started!
 
 1. **Clone the Repository**
    ```bash
