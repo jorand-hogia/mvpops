@@ -238,6 +238,9 @@ jobs:
           CONFIG_PATH="terraform/config/infrastructure.tfvars"
           echo "Using config file at: $CONFIG_PATH"
           
+          # Format storage account name consistently
+          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
+          
           # Verify config file exists
           if [ ! -f "$CONFIG_PATH" ]; then
             echo "Error: Config file not found at $CONFIG_PATH"
@@ -246,6 +249,23 @@ jobs:
             echo "Directory contents of terraform/config:"
             ls -la "terraform/config" || echo "Config directory not found"
             exit 1
+          fi
+          
+          # Check if state file exists in Azure Storage
+          echo "Checking if state file exists in Azure Storage..."
+          if az storage blob exists --container-name "$STATE_CONTAINER" --name "$STATE_KEY" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode login --query "exists" -o tsv | grep -q "true"; then
+            echo "State file exists in Azure Storage. Attempting to download for inspection..."
+            # Create a temp directory
+            TEMP_DIR=$(mktemp -d)
+            # Download the state file
+            az storage blob download --container-name "$STATE_CONTAINER" --name "$STATE_KEY" --file "$TEMP_DIR/terraform.tfstate" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode login
+            # Show summary of state file
+            echo "State file summary:"
+            cat "$TEMP_DIR/terraform.tfstate" | jq 'del(.resources[].instances[].attributes)' || echo "Could not parse state file with jq"
+            # Clean up
+            rm -rf "$TEMP_DIR"
+          else
+            echo "State file does not exist yet in Azure Storage. This appears to be a new deployment."
           fi
           
           # Verify backend configuration
@@ -263,13 +283,17 @@ jobs:
           
           # Debug output right before second terraform init
           echo "Debug right before second terraform init:"
+          # Re-set STORAGE_ACCOUNT_NAME since we changed directories
+          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
           echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
           echo "STATE_SA original value: $STATE_SA"
           
-          # Use a temporary hardcoded name for testing
-          # Comment out the line below after testing is complete
-          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
+          # Ensure storage account name is not empty
+          if [ -z "$STORAGE_ACCOUNT_NAME" ]; then
+            echo "Error: STORAGE_ACCOUNT_NAME is empty after directory change"
+            echo "STATE_SA: $STATE_SA"
+            exit 1
+          fi
           
           terraform init -migrate-state \
             -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
@@ -361,10 +385,12 @@ jobs:
           echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
           echo "STATE_SA original value: $STATE_SA"
           
-          # Use a temporary hardcoded name for testing
-          # Comment out the line below after testing is complete
-          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
+          # Ensure storage account name is not empty
+          if [ -z "$STORAGE_ACCOUNT_NAME" ]; then
+            echo "Error: STORAGE_ACCOUNT_NAME is empty in Apply step"
+            echo "STATE_SA: $STATE_SA"
+            exit 1
+          fi
           
           terraform init \
             -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
