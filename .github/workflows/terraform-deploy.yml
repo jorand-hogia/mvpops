@@ -211,9 +211,27 @@ jobs:
           echo "Verifying config file path..."
           ls -la ../../config/infrastructure.tfvars || echo "Config file not found at ../../config/infrastructure.tfvars"
           
-          # Try to force unlock if lock exists
+          # Initialize terraform first
+          echo "Initializing Terraform..."
+          terraform init \
+            -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
+            -backend-config="container_name=$STATE_CONTAINER" \
+            -backend-config="key=$STATE_KEY" \
+            -backend-config="resource_group_name=$STATE_RG" \
+            -backend-config="subscription_id=$ARM_SUBSCRIPTION_ID" \
+            -backend-config="tenant_id=$ARM_TENANT_ID" \
+            -backend-config="client_id=$ARM_CLIENT_ID" \
+            -backend-config="client_secret=$ARM_CLIENT_SECRET"
+          
+          # Check for and remove any existing locks
           echo "Checking for existing state lock..."
-          terraform force-unlock -force $(terraform state list | grep -o 'lock-[0-9a-f-]*' | head -n1) || echo "No lock to force unlock"
+          LOCK_ID=$(terraform state list | grep -o 'lock-[0-9a-f-]*' | head -n1)
+          if [ -n "$LOCK_ID" ]; then
+            echo "Found lock ID: $LOCK_ID"
+            terraform force-unlock -force "$LOCK_ID"
+          else
+            echo "No existing lock found"
+          fi
           
           # Run plan with lock timeout
           terraform plan \
