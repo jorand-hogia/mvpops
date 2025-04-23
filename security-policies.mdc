@@ -1,0 +1,32 @@
+# Security Policies
+
+## Authentication & Authorization
+- **Identity Provider**: Azure AD for all authentication
+- **Authorization Model**: Role-Based Access Control (RBAC)
+- **MFA**: Required for all administrative access
+- **Service Principals**: Managed identities for service-to-service auth
+
+## Network Security
+- **TLS**: Minimum TLS 1.2 for all communications
+- **Encryption**: All data in transit and at rest must be encrypted
+- **VPN**: Required for administrative access to production
+- **WAF**: Azure Front Door WAF for public endpoints
+
+## Security Scanning
+- **Container Scanning**: At build time and regularly in registry
+- **Code Scanning**: Static analysis with SonarQube
+- **Dependency Scanning**: For vulnerable packages
+- **Compliance Scanning**: Against CIS benchmarks
+
+## Secret Management
+- **Key Vault**: All secrets stored in Azure Key Vault
+- **Rotation**: 90-day rotation for all secrets
+- **Access Logs**: All secret access must be logged
+- **No Hardcoding**: No secrets in code or configuration files
+
+## Rules
+1. All services must use Azure AD for authentication
+2. All communications must use TLS 1.2 or higher
+3. All containers must pass security scanning before deployment
+4. All secrets must be stored in Azure Key Vault
+5. All security incidents must be reported within 24 hours 

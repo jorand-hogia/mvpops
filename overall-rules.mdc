@@ -1,0 +1,23 @@
+## Vision
+To create a modern DevOps culture that enables rapid, high-quality software delivery with complete operational visibility through automation, standardization, and team autonomy.
+
+## Goals
+1. **Accelerate Delivery**: Reduce deployment lead time by 50%
+2. **Increase Quality**: Reduce production incidents by 40%
+3. **Improve Visibility**: Achieve 100% visibility into production/staging environments
+4. **Team Autonomy**: Enable teams to deploy independently with proper guardrails
+5. **Operational Excellence**: Standardize infrastructure and operational practices
+
+# Ops Project Rules
+
+This project follows specific conventions for:
+- @tech-stack.mdc
+- @code-conventions.mdc
+- @architecture.mdc
+- @deployment-standards.mdc
+- @monitoring-standards.mdc
+- @security-policies.mdc
+- @team-workflows.mdc
+- @naming-conventions.mdc
+
+Key architectural principle: Services communicate via REST APIs and follow Azure best practices. 

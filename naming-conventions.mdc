@@ -1,0 +1,40 @@
+# Naming Conventions
+
+## Azure Resources
+- **Pattern**: `{env}-{service}-{resource-type}-{instance}`
+- **Environment**: `dev`, `stg`, `prod`
+- **Examples**:
+  - `prod-payment-vm-001`
+  - `dev-catalog-sqldb-primary`
+  - `stg-shared-acr`
+
+## GitHub Repositories
+- **Pattern**: `{service-name}-{component-type}`
+- **Examples**:
+  - `payment-service`
+  - `catalog-api`
+  - `shared-infrastructure`
+
+## Docker Images
+- **Pattern**: `{service-name}:{version}-{build-id}`
+- **Examples**:
+  - `payment-service:1.2.0-b123`
+  - `catalog-api:2.0.1-b456`
+
+## Terraform Resources
+- **Files**: `main.tf`, `variables.tf`, `outputs.tf`
+- **Modules**: `modules/{resource-type}`
+- **Workspaces**: Match environment names
+
+## Code Files
+- **Services**: `PascalCase` for service names
+- **Functions/Methods**: `camelCase` for functions
+- **Variables**: `camelCase` for variables
+- **Constants**: `UPPER_SNAKE_CASE` for constants
+
+## Rules
+1. All Azure resources must follow the defined naming pattern
+2. All repositories must follow the defined naming pattern
+3. All Docker images must include version and build ID
+4. All Terraform resources must use the standard file structure
+5. All code must follow the defined casing conventions 

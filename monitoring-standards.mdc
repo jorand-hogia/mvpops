@@ -1,0 +1,32 @@
+# Monitoring Standards
+
+## Metrics Collection
+- **Platform**: Azure Monitor for all metrics
+- **Application Insights**: For application performance monitoring
+- **Custom Metrics**: For business-specific indicators
+- **Collection Interval**: 1-minute intervals for critical metrics
+
+## Logging Requirements
+- **Log Analytics**: Central repository for all logs
+- **Log Levels**: ERROR, WARN, INFO standardized across services
+- **Structured Logging**: JSON format with standardized fields
+- **Retention**: 30 days for standard logs, 1 year for security logs
+
+## Alerting Framework
+- **Alert Severity**: P1 (Critical), P2 (High), P3 (Medium), P4 (Low)
+- **Response Times**: P1: 15min, P2: 1hr, P3: 4hrs, P4: 24hrs
+- **Notification Channels**: Email, Teams, PagerDuty
+- **Alert Suppression**: Quiet periods for maintenance windows
+
+## Dashboards
+- **Service Health**: Per-service dashboards
+- **Business KPIs**: Key business metrics dashboards
+- **Operations**: Infrastructure and platform dashboards
+- **Refreshes**: Auto-refresh every 5 minutes
+
+## Rules
+1. All services must emit standard metrics for CPU, memory, and throughput
+2. All applications must implement structured logging
+3. All critical services must have defined alerts and SLOs
+4. All teams must maintain service health dashboards
+5. All production incidents must be traceable through logs 

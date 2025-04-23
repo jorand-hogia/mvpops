@@ -13,7 +13,7 @@ autoAttach: true
 - **Azure Container Registry (ACR)**: Central Docker image repository
 
 ## Monitoring & Management
-- **Azure Monitor**: Central monitoring solution for all environments
+- **Azure Monitor**: Central monitoring solution for production environment
 - **Log Analytics**: Central logging repository
 - **Application Insights**: Application performance monitoring
 - **Grafana**: Dashboard visualization layer on Azure data
@@ -26,8 +26,7 @@ autoAttach: true
 
 ## CI/CD Infrastructure
 - **GitHub**: Source code repository for infrastructure code
-- **GitHub Actions**: CI pipeline automation for platform components
-- **Octopus Deploy**: CD orchestration for deployment targets
+- **GitHub Actions**: CI/CD pipeline automation for platform components
 - **SonarQube**: Central code quality scanning service
 
 ## Platform Services 
@@ -39,6 +38,6 @@ autoAttach: true
 ## Rules
 1. All platform infrastructure must be defined as Terraform code
 2. All platform services must be containerized with Docker
-3. All platform CI/CD must use GitHub Actions and Octopus Deploy
+3. All platform CI/CD must use GitHub Actions
 4. All platform secrets must be stored in Azure Key Vault
 5. All platform components must emit monitoring data to Azure Monitor

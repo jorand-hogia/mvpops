@@ -15,9 +15,9 @@ autoAttach: true
 - **Artifact Publication**: Azure Container Registry for platform images
 
 ## Platform CD Pipeline
-- **Deployment Tool**: Octopus Deploy for platform components
-- **Environment Progression**: Dev → Staging → Production
-- **Approval Process**: Automated for Dev, manual for Production
+- **Deployment Tool**: GitHub Actions for platform components
+- **Environment Progression**: Production
+- **Approval Process**: Manual for Production
 - **Rollback Capability**: All platform deployments must support rollback
 
 ## Platform Release Management

@@ -8,6 +8,17 @@ output "log_analytics_workspace_name" {
   value       = azurerm_log_analytics_workspace.main.name
 }
 
+output "log_analytics_workspace_key" {
+  description = "Primary shared key for the Log Analytics workspace"
+  value       = azurerm_log_analytics_workspace.main.primary_shared_key
+  sensitive   = true
+}
+
+output "log_analytics_workspace_guid" {
+  description = "The workspace (customer) ID for the Log Analytics workspace"
+  value       = azurerm_log_analytics_workspace.main.workspace_id
+}
+
 output "critical_action_group_id" {
   description = "ID of the critical alert action group"
   value       = azurerm_monitor_action_group.critical.id

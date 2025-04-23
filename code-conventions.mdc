@@ -1,0 +1,38 @@
+# Code Conventions
+
+## General Principles
+- **DRY**: Don't Repeat Yourself
+- **KISS**: Keep It Simple, Stupid
+- **YAGNI**: You Aren't Gonna Need It
+- **Single Responsibility**: Each component does one thing well
+
+## Source Control
+- **Commit Messages**: Follow Conventional Commits format
+- **Branch Names**: `feature/`, `bugfix/`, `hotfix/` prefixes
+- **PR Size**: < 300 lines of code per PR
+- **PR Description**: Link to JIRA ticket, describe changes
+
+## Code Style
+- **Formatting**: Use EditorConfig for consistent spacing
+- **Linting**: Mandatory for all languages (ESLint, etc.)
+- **Comments**: Document "why", not "what" or "how"
+- **Documentation**: README.md required for all repositories
+
+## Testing Standards
+- **Unit Tests**: Required for all business logic
+- **Integration Tests**: Required for all APIs
+- **Coverage**: Minimum 80% test coverage
+- **Mocking**: Use dependency injection for testability
+
+## API Design
+- **REST Standards**: Follow REST best practices
+- **Error Handling**: Consistent error response format
+- **Versioning**: Include version in URL path
+- **Documentation**: OpenAPI/Swagger for all APIs
+
+## Rules
+1. All code must follow the language-specific style guide
+2. All changes must have appropriate test coverage
+3. All code must pass linting before merge
+4. All APIs must be documented with OpenAPI
+5. All repositories must include a README.md 

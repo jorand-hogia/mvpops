@@ -1,0 +1,32 @@
+# Team Workflows
+
+## Development Process
+- **Methodology**: Agile Scrum with 2-week sprints
+- **Ceremonies**: Daily standup, sprint planning, retrospective
+- **Backlog Management**: JIRA for story tracking
+- **Story Standards**: User stories with acceptance criteria
+
+## Code Management
+- **Branching Strategy**: GitHub Flow (feature branches → main)
+- **Pull Requests**: Required for all changes
+- **Code Reviews**: Minimum 1 reviewer approval
+- **Merge Policy**: Squash and merge
+
+## Incident Management
+- **On-call Rotation**: PagerDuty for notification
+- **Incident Classification**: P1-P4 severity levels
+- **Resolution Flow**: Acknowledge → Mitigate → Resolve → Post-mortem
+- **Blameless Culture**: Focus on system improvement, not individuals
+
+## Communication
+- **Channels**: Teams for immediate, Email for formal
+- **Documentation**: Confluence for process and architecture docs
+- **Knowledge Sharing**: Weekly tech talks
+- **Cross-team Collaboration**: Monthly architecture reviews
+
+## Rules
+1. All code changes must be submitted via pull request
+2. All pull requests must have at least one reviewer
+3. All incidents must follow the defined resolution flow
+4. All teams must maintain up-to-date documentation
+5. All process improvements must be documented in retrospectives 

@@ -1,0 +1,29 @@
+# Technology Stack
+
+## Cloud Platform
+- **Azure**: Primary cloud platform for all infrastructure
+- **Azure Resource Manager**: For resource provisioning and management
+- **Azure Container Registry**: For Docker image storage
+
+## Infrastructure
+- **Terraform**: All infrastructure must be defined as code (v1.0+)
+- **Docker**: Containerization standard for all applications
+- **Azure Monitor**: Primary monitoring solution
+- **Azure Key Vault**: Secret management
+
+## CI/CD
+- **GitHub**: Source code repository
+- **GitHub Actions**: CI pipeline automation
+- **Octopus Deploy**: CD orchestration
+- **SonarQube**: Code quality scanning
+
+## Development
+- **VS Code**: Recommended IDE
+- **Azure CLI**: For infrastructure management scripts
+
+## Rules
+1. All infrastructure changes must be made through Terraform
+2. All applications must be containerized with Docker
+3. All CI/CD pipelines must use GitHub Actions and Octopus Deploy
+4. All secrets must be stored in Azure Key Vault
+5. All monitoring must leverage Azure Monitor 

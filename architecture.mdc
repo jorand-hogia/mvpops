@@ -1,0 +1,28 @@
+# Architecture Standards
+
+## Azure Environment Structure
+- **Subscription Organization**: One subscription per environment (dev/staging/prod)
+- **Resource Groups**: Organized by service and environment
+- **Tagging**: All resources must have owner, cost-center, and application tags
+
+## Network Architecture
+- **VNet Design**: Hub-and-spoke network topology
+- **Subnets**: Segregated by function (app, data, management)
+- **NSGs**: Defined at subnet level with principle of least privilege
+
+## Application Architecture
+- **Containerization**: All applications deployed as Docker containers
+- **Service Discovery**: Azure-native service discovery
+- **State Management**: Stateless services preferred, state in managed services
+
+## Data Architecture
+- **Storage**: Azure Blob Storage for unstructured data
+- **Databases**: Azure SQL for relational, Cosmos DB for NoSQL
+- **Caching**: Azure Redis Cache for performance optimization
+
+## Rules
+1. All systems must follow the defined Azure environment structure
+2. All network connections must adhere to the least-privilege principle
+3. All applications must be designed for high availability
+4. All state must be stored in managed Azure services
+5. All system components must be defined in architecture diagrams 
