@@ -285,7 +285,64 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan -lock-timeout=$TF_LOCK_TIMEOUT
+        run: |
+          # Function to check if lock exists and is stale
+          check_lock() {
+            local lock_age
+            local max_age=300  # 5 minutes in seconds
+            
+            # Get lock metadata
+            LOCK_METADATA=$(az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "properties.metadata" -o json 2>/dev/null || echo "{}")
+            LOCK_TIMESTAMP=$(echo "$LOCK_METADATA" | jq -r '.timestamp // empty')
+            
+            if [ -n "$LOCK_TIMESTAMP" ]; then
+              # Calculate lock age in seconds
+              lock_age=$(( $(date +%s) - $(date -d "$LOCK_TIMESTAMP" +%s) ))
+              if [ "$lock_age" -gt "$max_age" ]; then
+                echo "Found stale lock (age: ${lock_age}s), will remove it"
+                return 1
+              fi
+            fi
+            return 0
+          }
+
+          # Function to remove lock
+          remove_lock() {
+            echo "Removing lock file..."
+            az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" || true
+          }
+
+          # Initialize Terraform
+          echo "Initializing Terraform..."
+          terraform init -no-color
+
+          # Try to run plan with retries
+          max_retries=3
+          retry_count=0
+          while [ $retry_count -lt $max_retries ]; do
+            echo "Attempt $((retry_count + 1)) of $max_retries"
+            
+            # Check for stale locks before each attempt
+            if ! check_lock; then
+              remove_lock
+            fi
+            
+            # Run terraform plan
+            if terraform plan -no-color -out=tfplan -lock-timeout=$TF_LOCK_TIMEOUT; then
+              echo "Terraform plan completed successfully"
+              break
+            else
+              retry_count=$((retry_count + 1))
+              if [ $retry_count -lt $max_retries ]; then
+                echo "Plan failed, waiting before retry..."
+                sleep 30
+                remove_lock
+              else
+                echo "All retry attempts failed"
+                exit 1
+              fi
+            fi
+          done
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
@@ -318,4 +375,10 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "docs: Update Terraform documentation [skip ci]"
-          file_pattern: terraform/README.md 
+          file_pattern: terraform/README.md
+
+      - name: Cleanup on failure
+        if: always()
+        run: |
+          # Remove lock file if it exists
+          az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" || true 
