@@ -1,0 +1,38 @@
+product:
+  name: "example-product"
+  environment: "dev"
+  team: "example-team"
+  contact: "example-team@company.com"
+
+infrastructure:
+  compute:
+    vm_type: "Standard_D4s_v3"
+    instances: 2
+    requirements:
+      cpu: 4
+      memory: 16
+      disk: 256
+  
+  networking:
+    vnet_address_space: "10.1.0.0/16"
+    subnet_config:
+      - name: "app-subnet"
+        address_prefix: "10.1.1.0/24"
+      - name: "data-subnet"
+        address_prefix: "10.1.2.0/24"
+  
+  monitoring:
+    log_retention_days: 30
+    alerts:
+      - name: "high-cpu"
+        threshold: 80
+        window: "5m"
+      - name: "memory-pressure"
+        threshold: 90
+        window: "5m"
+      - name: "disk-space"
+        threshold: 85
+        window: "15m"
+
+  security:
+    allowed_ips: ["10.0.0.0/8"] 

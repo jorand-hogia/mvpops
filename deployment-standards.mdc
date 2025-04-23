@@ -1,0 +1,30 @@
+# Deployment Standards
+
+## CI Pipeline Requirements
+- **Source Control**: GitHub for all code
+- **Build Automation**: GitHub Actions
+- **Testing**: Automated unit, integration, and security tests
+- **Artifact Storage**: Azure Container Registry for Docker images
+
+## CD Pipeline Requirements
+- **Deployment Tool**: Octopus Deploy
+- **Environment Progression**: Dev → Staging → Production
+- **Approval Process**: Automated approvals for Dev, manual for Production
+- **Rollback Plan**: All deployments must have defined rollback procedures
+
+## Release Cadence
+- **Development**: Continuous deployment
+- **Staging**: Daily deployments 
+- **Production**: Weekly deployments in defined windows
+
+## Deployment Patterns
+- **Blue/Green**: For zero-downtime deployments
+- **Canary**: For high-risk changes
+- **Feature Flags**: For incremental feature rollout
+
+## Rules
+1. All code changes must pass automated tests before deployment
+2. All production deployments must have manual approval
+3. All deployments must have a documented rollback plan
+4. All high-risk changes must use canary deployment pattern
+5. All deployments must be traceable to source code commits 

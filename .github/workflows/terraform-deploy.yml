@@ -136,9 +136,14 @@ jobs:
             --location "swedencentral" \
             --tags Environment=Production Service=Terraform team=Platform
 
-          # Format storage account name
+          # Format storage account name - improved handling
           STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
-          echo "Using storage account name: $STORAGE_ACCOUNT_NAME"
+          if [ ${#STORAGE_ACCOUNT_NAME} -lt 3 ]; then
+            echo "Error: Storage account name too short after sanitization"
+            echo "Original value: $STATE_SA"
+            echo "Sanitized value: $STORAGE_ACCOUNT_NAME"
+            exit 1
+          fi
 
           # Validate storage account name
           if [ -z "$STORAGE_ACCOUNT_NAME" ]; then
@@ -184,7 +189,8 @@ jobs:
               --sku "Standard_LRS" \
               --encryption-services blob \
               --min-tls-version "TLS1_2" \
-              --allow-blob-public-access false
+              --allow-blob-public-access false \
+              --tags Environment=Production Service=Terraform Purpose=State
           fi
           
           # Get storage account key
@@ -206,35 +212,54 @@ jobs:
               --account-key "$STORAGE_ACCOUNT_KEY"
           fi
           
-          # Check if there are any existing lock files that need to be removed
-          echo "Checking for stale lock files..."
+          # Implement proper state locking mechanism
+          echo "Checking and managing state locks..."
           LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
           if [ "$LOCK_EXISTS" = "true" ]; then
-            echo "Lock file exists for state. This might be a stale lock from a previous run."
-            echo "Lock details:"
-            az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "{lastModified:properties.lastModified, size:properties.contentLength}" -o json
-          
-            # Uncomment the line below to automatically remove stale locks (be careful with this in production)
-            # az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
-            # echo "Lock file removed. If this was a mistake, the workflow may fail if another process is currently using the state file."
-          else
-            echo "No lock file found for state."
+            echo "Lock file exists for state. Checking if it's stale..."
+            
+            # Get lock file metadata
+            LOCK_METADATA=$(az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "properties.metadata" -o json)
+            LOCK_TIMESTAMP=$(echo "$LOCK_METADATA" | jq -r '.timestamp // empty')
+            LOCK_OWNER=$(echo "$LOCK_METADATA" | jq -r '.owner // empty')
+            
+            if [ -n "$LOCK_TIMESTAMP" ]; then
+              # Check if lock is older than 1 hour (considered stale)
+              CURRENT_TIME=$(date +%s)
+              LOCK_TIME=$(date -d "$LOCK_TIMESTAMP" +%s)
+              LOCK_AGE=$((CURRENT_TIME - LOCK_TIME))
+              
+              if [ $LOCK_AGE -gt 3600 ]; then
+                echo "Lock is stale (over 1 hour old). Breaking the lock..."
+                az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
+              else
+                echo "Lock is active and owned by: $LOCK_OWNER"
+                echo "Lock was created at: $LOCK_TIMESTAMP"
+                echo "Waiting for lock to be released..."
+                exit 1
+              fi
+            else
+              echo "Lock file exists but has no metadata. Breaking the lock..."
+              az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
+            fi
           fi
+          
+          # Create our own lock
+          echo "Creating new state lock..."
+          echo "{\"timestamp\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",\"owner\":\"${GITHUB_WORKFLOW}-${GITHUB_RUN_ID}\"}" > lock.json
+          az storage blob upload \
+            --container-name "$STATE_CONTAINER" \
+            --name "${STATE_KEY}.lock" \
+            --file lock.json \
+            --account-name "$STORAGE_ACCOUNT_NAME" \
+            --auth-mode key \
+            --account-key "$STORAGE_ACCOUNT_KEY" \
+            --metadata timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" owner="${GITHUB_WORKFLOW}-${GITHUB_RUN_ID}"
 
       - name: Terraform Init
         run: |
           # Format storage account name for consistency
           STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
-          
-          # Debug output right before terraform init
-          echo "Debug right before terraform init:"
-          echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
-          echo "STATE_SA original value: $STATE_SA"
-          
-          # Use a temporary hardcoded name for testing
-          # Comment out the line below after testing is complete
-          # STORAGE_ACCOUNT_NAME="mvpopstfstate"
-          # echo "Using hardcoded storage account name for testing: $STORAGE_ACCOUNT_NAME"
           
           terraform init \
             -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
@@ -247,265 +272,34 @@ jobs:
             -backend-config="client_secret=$ARM_CLIENT_SECRET"
 
       - name: Terraform Plan
-        run: |
-          # Debug repository structure
-          echo "Workspace directory structure:"
-          cd $GITHUB_WORKSPACE
-          ls -R terraform/
-          
-          # Use relative path from workspace root
-          CONFIG_PATH="terraform/config/infrastructure.tfvars"
-          echo "Using config file at: $CONFIG_PATH"
-          
-          # Format storage account name consistently
-          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
-          
-          # Verify config file exists
-          if [ ! -f "$CONFIG_PATH" ]; then
-            echo "Error: Config file not found at $CONFIG_PATH"
-            echo "Current directory: $(pwd)"
-            echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-            echo "Directory contents of terraform/config:"
-            ls -la "terraform/config" || echo "Config directory not found"
-            exit 1
-          fi
-          
-          # Check if state file exists in Azure Storage
-          echo "Checking if state file exists in Azure Storage..."
-          # Get the storage account key
-          STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "$STORAGE_ACCOUNT_NAME" --resource-group "$STATE_RG" --query "[0].value" -o tsv)
-          
-          STATE_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "$STATE_KEY" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
-          if [ "$STATE_EXISTS" = "true" ]; then
-            echo "State file exists in Azure Storage. Attempting to download for inspection..."
-            # Create a temp directory
-            TEMP_DIR=$(mktemp -d)
-            # Download the state file
-            az storage blob download --container-name "$STATE_CONTAINER" --name "$STATE_KEY" --file "$TEMP_DIR/terraform.tfstate" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
-            # Show summary of state file
-            echo "State file summary:"
-            cat "$TEMP_DIR/terraform.tfstate" | jq 'del(.resources[].instances[].attributes)' 2>/dev/null || echo "Could not parse state file with jq"
-            
-            # Check for existing locks
-            echo "Checking for state locks..."
-            LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
-            if [ "$LOCK_EXISTS" = "true" ]; then
-              echo "Lock file exists for state. Getting details..."
-              # Use -f flag for Azure CLI to fail silently
-              az storage blob download --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --file "$TEMP_DIR/terraform.tfstate.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" || echo "Could not download lock file, it may have been removed already"
-              
-              if [ -f "$TEMP_DIR/terraform.tfstate.lock" ]; then
-                cat "$TEMP_DIR/terraform.tfstate.lock" || echo "Could not read lock file"
-                echo "Consider removing the lock file if no Terraform operations are currently running."
-              else
-                echo "Lock file could not be downloaded, it may have been removed between checking and download."
-              fi
-            else
-              echo "No lock file found for state."
-            fi
-            # Clean up
-            rm -rf "$TEMP_DIR"
-          else
-            echo "State file does not exist yet in Azure Storage, or current identity lacks permission to check."
-            echo "Will proceed with initialization which should be able to detect an existing state file if present."
-          fi
-          
-          # Verify backend configuration
-          echo "Verifying backend configuration..."
-          terraform init -backend=false
-          
-          # Return to working directory and run plan
-          cd terraform/environments/prod
-          echo "Current directory before plan: $(pwd)"
-          echo "Verifying config file path..."
-          ls -la ../../config/infrastructure.tfvars || echo "Config file not found at ../../config/infrastructure.tfvars"
-          
-          # Initialize terraform first
-          echo "Initializing Terraform..."
-          
-          # Debug output right before second terraform init
-          echo "Debug right before second terraform init:"
-          # Re-set STORAGE_ACCOUNT_NAME since we changed directories
-          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
-          echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
-          echo "STATE_SA original value: $STATE_SA"
-          
-          # Ensure storage account name is not empty
-          if [ -z "$STORAGE_ACCOUNT_NAME" ]; then
-            echo "Error: STORAGE_ACCOUNT_NAME is empty after directory change"
-            echo "STATE_SA: $STATE_SA"
-            exit 1
-          fi
-          
-          # Get storage account key for Terraform backend
-          STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "$STORAGE_ACCOUNT_NAME" --resource-group "$STATE_RG" --query "[0].value" -o tsv)
-          
-          # Export as environment variables for Terraform instead of CLI args
-          export ARM_ACCESS_KEY="$STORAGE_ACCOUNT_KEY"
-          
-          # Check for existing lock and remove if necessary
-          echo "Checking for existing state lock before initialization..."
-          LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
-          if [ "$LOCK_EXISTS" = "true" ]; then
-            echo "WARNING: Lock file exists for state. This might be a stale lock."
-            echo "Lock details:"
-            az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "{lastModified:properties.lastModified, size:properties.contentLength}" -o json
-            
-            # We will force unlock if the lock is older than 1 hour
-            LOCK_DATE=$(az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "properties.lastModified" -o tsv)
-            CURRENT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-            echo "Lock date: $LOCK_DATE"
-            echo "Current date: $CURRENT_DATE"
-            
-            # Convert dates to seconds since epoch for comparison
-            LOCK_SECONDS=$(date -d "$LOCK_DATE" +%s)
-            CURRENT_SECONDS=$(date -d "$CURRENT_DATE" +%s)
-            DIFF_SECONDS=$((CURRENT_SECONDS - LOCK_SECONDS))
-            
-            if [ $DIFF_SECONDS -gt 3600 ]; then
-              echo "Lock is older than 1 hour, forcing removal to prevent workflow stalls."
-              az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
-              echo "Lock file removed."
-            else
-              echo "Lock is recent (less than 1 hour old). It might be active. Will try to proceed anyway."
-            fi
-          else
-            echo "No lock file found, proceeding with init."
-          fi
-          
-          terraform init \
-            -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
-            -backend-config="container_name=$STATE_CONTAINER" \
-            -backend-config="key=$STATE_KEY" \
-            -backend-config="resource_group_name=$STATE_RG" \
-            -force-unlock=true \
-            -reconfigure
-
-          # Check for and remove any existing locks
-          echo "Checking for existing state lock..."
-          LOCK_ID=$(terraform state list 2>/dev/null | grep -o 'lock-[0-9a-f-]*' | head -n1 || echo "")
-          if [ -n "$LOCK_ID" ]; then
-            echo "Found lock ID: $LOCK_ID"
-            terraform force-unlock -force "$LOCK_ID"
-          else
-            echo "No existing lock found via terraform state list"
-          fi
-
-          # Run plan with lock timeout
-          terraform plan \
-            -var-file="../../config/infrastructure.tfvars" \
-            -lock-timeout=5m \
-            -out=tfplan
-
-      - name: Upload Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: ./terraform/environments/prod/tfplan
-          retention-days: 1
-
-  apply:
-    name: 'Apply Terraform Changes'
-    needs: plan
-    runs-on: ubuntu-latest
-    environment: production
-    if: github.ref == 'refs/heads/master'
-    
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./terraform/environments/prod
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.5.7"
-
-      - name: Login to Azure
-        uses: azure/login@v1
-        with:
-          creds: |
-            {
-              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
-              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
-              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
-              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
-            }
-
-      - name: Download Plan
-        uses: actions/download-artifact@v4
-        with:
-          name: tfplan
-          path: ./terraform/environments/prod
-
-      - name: Terraform Init
-        run: |
-          # Format storage account name for consistency
-          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
-          
-          # Debug output right before terraform init
-          echo "Debug in Apply step:"
-          echo "STORAGE_ACCOUNT_NAME: $STORAGE_ACCOUNT_NAME"
-          echo "STATE_SA original value: $STATE_SA"
-          
-          # Ensure storage account name is not empty
-          if [ -z "$STORAGE_ACCOUNT_NAME" ]; then
-            echo "Error: STORAGE_ACCOUNT_NAME is empty in Apply step"
-            echo "STATE_SA: $STATE_SA"
-            exit 1
-          fi
-          
-          # Get storage account key for Terraform backend
-          STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "$STORAGE_ACCOUNT_NAME" --resource-group "$STATE_RG" --query "[0].value" -o tsv)
-          
-          # Export as environment variables for Terraform instead of CLI args
-          export ARM_ACCESS_KEY="$STORAGE_ACCOUNT_KEY"
-          
-          # Check for existing lock and remove if necessary
-          echo "Checking for existing state lock before initialization..."
-          LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
-          if [ "$LOCK_EXISTS" = "true" ]; then
-            echo "WARNING: Lock file exists for state. This might be a stale lock."
-            echo "Lock details:"
-            az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "{lastModified:properties.lastModified, size:properties.contentLength}" -o json
-            
-            # We will force unlock if the lock is older than 1 hour
-            LOCK_DATE=$(az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "properties.lastModified" -o tsv)
-            CURRENT_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-            echo "Lock date: $LOCK_DATE"
-            echo "Current date: $CURRENT_DATE"
-            
-            # Convert dates to seconds since epoch for comparison
-            LOCK_SECONDS=$(date -d "$LOCK_DATE" +%s)
-            CURRENT_SECONDS=$(date -d "$CURRENT_DATE" +%s)
-            DIFF_SECONDS=$((CURRENT_SECONDS - LOCK_SECONDS))
-            
-            if [ $DIFF_SECONDS -gt 3600 ]; then
-              echo "Lock is older than 1 hour, forcing removal to prevent workflow stalls."
-              az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
-              echo "Lock file removed."
-            else
-              echo "Lock is recent (less than 1 hour old). It might be active. Will try to proceed anyway."
-            fi
-          else
-            echo "No lock file found, proceeding with init."
-          fi
-          
-          terraform init \
-            -backend-config="storage_account_name=$STORAGE_ACCOUNT_NAME" \
-            -backend-config="container_name=$STATE_CONTAINER" \
-            -backend-config="key=$STATE_KEY" \
-            -backend-config="resource_group_name=$STATE_RG" \
-            -force-unlock=true \
-            -reconfigure
+        id: plan
+        run: terraform plan -no-color -out=tfplan
 
       - name: Terraform Apply
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         run: terraform apply -auto-approve tfplan
-        
+
+      - name: Cleanup State Lock
+        if: always()
+        run: |
+          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
+          STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "$STORAGE_ACCOUNT_NAME" --resource-group "$STATE_RG" --query "[0].value" -o tsv)
+          
+          # Check if our lock still exists
+          LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
+          if [ "$LOCK_EXISTS" = "true" ]; then
+            # Verify it's our lock before deleting
+            LOCK_METADATA=$(az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "properties.metadata" -o json)
+            LOCK_OWNER=$(echo "$LOCK_METADATA" | jq -r '.owner // empty')
+            
+            if [ "$LOCK_OWNER" = "${GITHUB_WORKFLOW}-${GITHUB_RUN_ID}" ]; then
+              echo "Cleaning up our state lock..."
+              az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
+            else
+              echo "Warning: Lock exists but is owned by another process: $LOCK_OWNER"
+            fi
+          fi
+
       - name: Generate Terraform Documentation
         run: |
           # Install terraform-docs if needed

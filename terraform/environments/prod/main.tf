@@ -16,112 +16,187 @@ provider "azurerm" {
   features {}
 }
 
-# Data source for the regional Network Watcher - Not needed as we create one explicitly
+locals {
+  environment = "prod"
+  location    = "swedencentral"
+  tags = {
+    Environment = local.environment
+    ManagedBy   = "Terraform"
+    Project     = "DevOps MVP"
+  }
+}
 
-# Define resource group for VMs
-resource "azurerm_resource_group" "vm_rg" {
-  name     = var.resource_group_name
-  location = var.location
-  tags     = var.tags
+# Resource Group for Monitoring
+resource "azurerm_resource_group" "monitoring" {
+  name     = "rg-monitoring-${local.environment}"
+  location = local.location
+  tags     = local.tags
+}
+
+# Monitoring Module
+module "monitoring" {
+  source = "../../modules/azure/monitoring"
+
+  environment                  = local.environment
+  location                    = local.location
+  resource_group_name         = azurerm_resource_group.monitoring.name
+  log_analytics_workspace_name = "log-mvp-${local.environment}"
+  ops_team_email             = var.ops_team_email
+  vm_resource_ids            = var.vm_resource_ids
+  tags                       = local.tags
+}
+
+# Resource Group for VMs
+resource "azurerm_resource_group" "vms" {
+  name     = "rg-vms-${local.environment}"
+  location = local.location
+  tags     = local.tags
+}
+
+# Network Security Group
+resource "azurerm_network_security_group" "main" {
+  name                = "nsg-vms-${local.environment}"
+  location            = local.location
+  resource_group_name = azurerm_resource_group.vms.name
+
+  security_rule {
+    name                       = "AllowSSH"
+    priority                   = 1001
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range         = "*"
+    destination_port_range    = "22"
+    source_address_prefix     = "*"
+    destination_address_prefix = "*"
+  }
+
+  tags = local.tags
+}
+
+# Virtual Network
+resource "azurerm_virtual_network" "main" {
+  name                = "vnet-${local.environment}"
+  address_space       = ["10.0.0.0/16"]
+  location            = local.location
+  resource_group_name = azurerm_resource_group.vms.name
+  tags               = local.tags
+}
+
+# Subnet
+resource "azurerm_subnet" "main" {
+  name                 = "snet-vms-${local.environment}"
+  resource_group_name  = azurerm_resource_group.vms.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Associate NSG with Subnet
+resource "azurerm_subnet_network_security_group_association" "main" {
+  subnet_id                 = azurerm_subnet.main.id
+  network_security_group_id = azurerm_network_security_group.main.id
+}
+
+# Public IPs for VMs
+resource "azurerm_public_ip" "vm" {
+  count               = length(var.vm_configs)
+  name                = "pip-${var.vm_configs[count.index].name}-${local.environment}"
+  location            = local.location
+  resource_group_name = azurerm_resource_group.vms.name
+  allocation_method   = "Static"
+  sku                = "Standard"
+  tags               = local.tags
+}
+
+# Network Interfaces for VMs
+resource "azurerm_network_interface" "vm" {
+  count               = length(var.vm_configs)
+  name                = "nic-${var.vm_configs[count.index].name}-${local.environment}"
+  location            = local.location
+  resource_group_name = azurerm_resource_group.vms.name
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.main.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id         = azurerm_public_ip.vm[count.index].id
+  }
+
+  tags = local.tags
+}
+
+# Virtual Machines
+resource "azurerm_linux_virtual_machine" "vm" {
+  count               = length(var.vm_configs)
+  name                = var.vm_configs[count.index].name
+  resource_group_name = azurerm_resource_group.vms.name
+  location            = local.location
+  size                = var.vm_configs[count.index].size
+  admin_username      = "adminuser"
+
+  network_interface_ids = [
+    azurerm_network_interface.vm[count.index].id
+  ]
+
+  admin_ssh_key {
+    username   = "adminuser"
+    public_key = var.vm_ssh_public_key
+  }
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+
+  tags = merge(local.tags, {
+    Role = var.vm_configs[count.index].role
+  })
+}
+
+# VM Extension for Log Analytics Agent
+resource "azurerm_virtual_machine_extension" "log_analytics" {
+  count                = length(var.vm_configs)
+  name                 = "LogAnalytics"
+  virtual_machine_id   = azurerm_linux_virtual_machine.vm[count.index].id
+  publisher            = "Microsoft.EnterpriseCloud.Monitoring"
+  type                 = "OmsAgentForLinux"
+  type_handler_version = "1.13"
+
+  settings = jsonencode({
+    workspaceId = module.monitoring.log_analytics_workspace_id
+  })
+
+  protected_settings = jsonencode({
+    workspaceKey = module.monitoring.log_analytics_workspace_key
+  })
+
+  tags = local.tags
 }
 
 # Create dedicated Network Watcher in the App RG
 resource "azurerm_network_watcher" "app_rg_watcher" {
-  name                = "${azurerm_resource_group.vm_rg.name}-networkwatcher"
-  location            = azurerm_resource_group.vm_rg.location
-  resource_group_name = azurerm_resource_group.vm_rg.name
+  name                = "${azurerm_resource_group.vms.name}-networkwatcher"
+  location            = azurerm_resource_group.vms.location
+  resource_group_name = azurerm_resource_group.vms.name
 
   tags = var.tags
-}
-
-# Create a virtual network for VMs
-resource "azurerm_virtual_network" "vm_vnet" {
-  name                = "devops-mvp-prod-vnet"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.vm_rg.location
-  resource_group_name = azurerm_resource_group.vm_rg.name
-  tags                = var.tags
-}
-
-# Create a subnet for VMs
-resource "azurerm_subnet" "vm_subnet" {
-  name                 = "vm-subnet"
-  resource_group_name  = azurerm_resource_group.vm_rg.name
-  virtual_network_name = azurerm_virtual_network.vm_vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
-}
-
-# Create Network Security Group for VM Subnet
-resource "azurerm_network_security_group" "vm_subnet_nsg" {
-  name                = "${azurerm_subnet.vm_subnet.name}-nsg"
-  location            = azurerm_resource_group.vm_rg.location
-  resource_group_name = azurerm_resource_group.vm_rg.name
-
-  security_rule {
-    name                       = "AllowSSHInbound"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = "*" # WARNING: Change to a specific IP/range
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "AllowAzureMonitorOutbound"
-    priority                   = 100
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "*"
-    destination_address_prefix = "AzureMonitor" # Use service tag
-  }
-  
-  security_rule {
-      name                       = "AllowInternetOutbound"
-      priority                   = 200 # Lower priority than AzureMonitor
-      direction                  = "Outbound"
-      access                     = "Allow"
-      protocol                   = "*"
-      source_port_range          = "*"
-      destination_port_range     = "*"
-      source_address_prefix      = "*"
-      destination_address_prefix = "Internet"
-  }
-
-  security_rule {
-    name                       = "AllowGrafanaInbound"
-    priority                   = 110
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "3000"
-    source_address_prefix      = "*" # Allow access from anywhere (Insecure)
-    destination_address_prefix = "*"
-  }
-
-  tags = var.tags
-}
-
-# Associate NSG with VM Subnet
-resource "azurerm_subnet_network_security_group_association" "vm_subnet_nsg_assoc" {
-  subnet_id                 = azurerm_subnet.vm_subnet.id
-  network_security_group_id = azurerm_network_security_group.vm_subnet_nsg.id
 }
 
 # Enable NSG Flow Logs
 resource "azurerm_network_watcher_flow_log" "vm_subnet_nsg_flowlog" {
   # Use the Network Watcher created within the App RG
   network_watcher_name = azurerm_network_watcher.app_rg_watcher.name
-  resource_group_name  = azurerm_resource_group.vm_rg.name
+  resource_group_name  = azurerm_resource_group.vms.name
   
-  name                       = "${azurerm_network_security_group.vm_subnet_nsg.name}-flowlog"
-  network_security_group_id  = azurerm_network_security_group.vm_subnet_nsg.id
+  name                       = "${azurerm_network_security_group.main.name}-flowlog"
+  network_security_group_id  = azurerm_network_security_group.main.id
   storage_account_id         = azurerm_storage_account.nsg_flow_logs.id
   enabled                    = true
   retention_policy {
@@ -133,9 +208,9 @@ resource "azurerm_network_watcher_flow_log" "vm_subnet_nsg_flowlog" {
   version = 2
   traffic_analytics {
     enabled               = true
-    workspace_id          = module.monitor.log_analytics_workspace_guid # Send to our LA Workspace (Use GUID)
-    workspace_region      = azurerm_resource_group.vm_rg.location
-    workspace_resource_id = module.monitor.log_analytics_workspace_id # Keep full ID here
+    workspace_id          = module.monitoring.log_analytics_workspace_guid # Send to our LA Workspace (Use GUID)
+    workspace_region      = azurerm_resource_group.vms.location
+    workspace_resource_id = module.monitoring.log_analytics_workspace_id # Keep full ID here
     interval_in_minutes   = 10 # Frequency for processing logs
   }
   
@@ -145,8 +220,8 @@ resource "azurerm_network_watcher_flow_log" "vm_subnet_nsg_flowlog" {
 # Create a storage account for boot diagnostics
 resource "azurerm_storage_account" "boot_diagnostics" {
   name                     = "bootdiagdevopsprod"
-  resource_group_name      = azurerm_resource_group.vm_rg.name
-  location                 = azurerm_resource_group.vm_rg.location
+  resource_group_name      = azurerm_resource_group.vms.name
+  location                 = azurerm_resource_group.vms.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
   tags                     = var.tags
@@ -155,8 +230,8 @@ resource "azurerm_storage_account" "boot_diagnostics" {
 # Create Storage Account for NSG Flow Logs
 resource "azurerm_storage_account" "nsg_flow_logs" {
   name                     = "stnsgflowlogs${var.environment}" # Needs global uniqueness
-  resource_group_name      = azurerm_resource_group.vm_rg.name # Store in same RG for simplicity
-  location                 = azurerm_resource_group.vm_rg.location
+  resource_group_name      = azurerm_resource_group.vms.name # Store in same RG for simplicity
+  location                 = azurerm_resource_group.vms.location
   account_tier             = "Standard"
   account_replication_type = "LRS" # LRS is usually sufficient
   account_kind             = "StorageV2"
@@ -169,11 +244,11 @@ module "cicd_agent_vm" {
   source              = "../../modules/azure/vm"
   count               = var.cicd_agent_vm_count
   vm_name             = "cicd-agent-${count.index + 1}"
-  resource_group_name = azurerm_resource_group.vm_rg.name
-  location            = azurerm_resource_group.vm_rg.location
+  resource_group_name = azurerm_resource_group.vms.name
+  location            = azurerm_resource_group.vms.location
   vm_size             = "Standard_B2ms"
   os_type             = "linux"
-  subnet_id           = azurerm_subnet.vm_subnet.id
+  subnet_id           = azurerm_subnet.main.id
   public_ip           = false
   admin_username      = var.vm_admin_username
   ssh_public_key      = var.vm_ssh_public_key
@@ -201,11 +276,11 @@ module "monitoring_vm" {
   source              = "../../modules/azure/vm"
   count               = var.monitoring_vm_count
   vm_name             = "monitoring-${count.index + 1}"
-  resource_group_name = azurerm_resource_group.vm_rg.name
-  location            = azurerm_resource_group.vm_rg.location
+  resource_group_name = azurerm_resource_group.vms.name
+  location            = azurerm_resource_group.vms.location
   vm_size             = "Standard_B2ms"
   os_type             = "linux"
-  subnet_id           = azurerm_subnet.vm_subnet.id
+  subnet_id           = azurerm_subnet.main.id
   public_ip           = true
   admin_username      = var.vm_admin_username
   ssh_public_key      = var.vm_ssh_public_key
@@ -233,11 +308,11 @@ module "management_vm" {
   source              = "../../modules/azure/vm"
   count               = var.management_vm_count
   vm_name             = "mgmt-${count.index + 1}"
-  resource_group_name = azurerm_resource_group.vm_rg.name
-  location            = azurerm_resource_group.vm_rg.location
+  resource_group_name = azurerm_resource_group.vms.name
+  location            = azurerm_resource_group.vms.location
   vm_size             = "Standard_B1ms"
   os_type             = "linux"
-  subnet_id           = azurerm_subnet.vm_subnet.id
+  subnet_id           = azurerm_subnet.main.id
   public_ip           = true
   admin_username      = var.vm_admin_username
   ssh_public_key      = var.vm_ssh_public_key
@@ -276,11 +351,11 @@ module "security_center" {
 module "monitor" {
   source = "../../modules/azure/monitor"
 
-  resource_group_name = azurerm_resource_group.vm_rg.name # Deploy in the same RG as VMs
-  location            = azurerm_resource_group.vm_rg.location
+  resource_group_name = azurerm_resource_group.vms.name # Deploy in the same RG as VMs
+  location            = azurerm_resource_group.vms.location
   tags                = var.tags
   base_name           = "mvpops-${var.environment}" # Base name for DCR, etc.
-  target_resource_group_id = azurerm_resource_group.vm_rg.id # Pass the VM RG ID for health alert scope
+  target_resource_group_id = azurerm_resource_group.vms.id # Pass the VM RG ID for health alert scope
 
   log_analytics_workspace_name = "mvpops-${var.environment}-law"
   action_group_name            = "mvpops-${var.environment}-ag"
@@ -348,7 +423,7 @@ resource "azurerm_monitor_data_collection_rule_association" "management_vm_dcr_a
 # resource "azurerm_network_connection_monitor" "main" {
 #   name                 = "mvpops-${var.environment}-connection-monitor"
 #   network_watcher_id   = data.azurerm_network_watcher.main.id
-#   location             = azurerm_resource_group.vm_rg.location # Must match Network Watcher location
+#   location             = azurerm_resource_group.vms.location # Must match Network Watcher location
 #   # Removed output block - Linkage to LA is implicit or via Network Watcher
 #   
 #   endpoint {

@@ -1,0 +1,164 @@
+name: Product Infrastructure Management
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/products/*/config.yaml'
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'terraform/products/*/config.yaml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Install ajv-cli
+        run: |
+          npm install -g ajv-cli
+
+      - name: Validate Configurations
+        run: |
+          for config in terraform/products/*/config.yaml; do
+            echo "Validating $config..."
+            yq eval -o json "$config" > config.json
+            ajv validate -s terraform/config-schema.json -d config.json
+          done
+
+      - name: Generate Terraform Variables
+        run: |
+          for config in terraform/products/*/config.yaml; do
+            product_dir=$(dirname "$config")
+            pwsh terraform/scripts/generate-tfvars.ps1 -ConfigPath "$config" > "$product_dir/terraform.tfvars"
+          done
+
+  plan:
+    name: Plan Infrastructure Changes
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        product: ${{ fromJson(github.event.pull_request.base.ref == 'master' && steps.get-products.outputs.products || '[""]') }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get Changed Products
+        id: get-products
+        run: |
+          PRODUCTS=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep "terraform/products/.*/config.yaml" | cut -d/ -f3 | jq -R -s -c 'split("\n")[:-1]')
+          echo "products=$PRODUCTS" >> $GITHUB_OUTPUT
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Configure Azure Credentials
+        uses: azure/login@v1
+        with:
+          creds: |
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+            }
+
+      - name: Terraform Init & Plan
+        if: matrix.product != ''
+        run: |
+          cd terraform/products/${{ matrix.product }}
+          
+          # Initialize Terraform
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.STATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.STATE_SA }}" \
+            -backend-config="container_name=${{ secrets.STATE_CONTAINER }}" \
+            -backend-config="key=${{ matrix.product }}.tfstate"
+          
+          # Create plan
+          terraform plan -var-file=terraform.tfvars -out=tfplan
+          
+          # Show plan
+          terraform show -no-color tfplan > plan.txt
+
+      - name: Comment Plan on PR
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request' && matrix.product != ''
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('terraform/products/${{ matrix.product }}/plan.txt', 'utf8');
+            const comment = `### Terraform Plan for ${{ matrix.product }}
+            \`\`\`hcl
+            ${plan}
+            \`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  apply:
+    name: Apply Infrastructure Changes
+    needs: plan
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        product: ${{ fromJson(steps.get-products.outputs.products) }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get Changed Products
+        id: get-products
+        run: |
+          PRODUCTS=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep "terraform/products/.*/config.yaml" | cut -d/ -f3 | jq -R -s -c 'split("\n")[:-1]')
+          echo "products=$PRODUCTS" >> $GITHUB_OUTPUT
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Configure Azure Credentials
+        uses: azure/login@v1
+        with:
+          creds: |
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+            }
+
+      - name: Terraform Init & Apply
+        if: matrix.product != ''
+        run: |
+          cd terraform/products/${{ matrix.product }}
+          
+          # Initialize Terraform
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.STATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.STATE_SA }}" \
+            -backend-config="container_name=${{ secrets.STATE_CONTAINER }}" \
+            -backend-config="key=${{ matrix.product }}.tfstate"
+          
+          # Apply changes
+          terraform apply -var-file=terraform.tfvars -auto-approve 

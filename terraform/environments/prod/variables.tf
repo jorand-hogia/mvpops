@@ -56,13 +56,49 @@ variable "vm_admin_username" {
 }
 
 variable "vm_ssh_public_key" {
-  description = "SSH public key for VM admin access"
+  description = "SSH public key for VM access"
   type        = string
-  sensitive   = true
 }
 
 variable "cost_center" {
   description = "The cost center tag value for resource tracking."
   type        = string
   default     = "JPCostCenterProd"
+}
+
+variable "ops_team_email" {
+  description = "Email address for the ops team to receive alerts"
+  type        = string
+}
+
+variable "vm_configs" {
+  description = "List of VM configurations"
+  type = list(object({
+    name = string
+    size = string
+    role = string
+  }))
+  default = [
+    {
+      name = "vm-cicd-agent-prod"
+      size = "Standard_D4s_v3"
+      role = "CI/CD Agent"
+    },
+    {
+      name = "vm-monitoring-prod"
+      size = "Standard_E4s_v3"
+      role = "Monitoring"
+    },
+    {
+      name = "vm-management-prod"
+      size = "Standard_B2ms"
+      role = "Management"
+    }
+  ]
+}
+
+variable "vm_resource_ids" {
+  description = "List of VM resource IDs to monitor"
+  type        = list(string)
+  default     = []
 } 
