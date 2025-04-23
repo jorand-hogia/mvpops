@@ -53,4 +53,48 @@ No modules.
 | <a name="output_resource_group_id"></a> [resource\_group\_id](#output\_resource\_group\_id) | The ID of the resource group |
 | <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name) | The name of the resource group |
 | <a name="output_storage_account_name"></a> [storage\_account\_name](#output\_storage\_account\_name) | The name of the storage account |
+
+# Terraform Configuration
+
+## Environment Variables
+
+To configure the Terraform state backend, set the following environment variables:
+
+Required:
+- `TF_STATE_RESOURCE_GROUP`: Resource group name for Terraform state
+- `TF_STATE_STORAGE_ACCOUNT`: Storage account name for Terraform state
+
+Optional (with defaults):
+- `TF_STATE_CONTAINER`: Container name for Terraform state (default: "tfstate")
+- `TF_STATE_KEY`: State file name (default: "terraform.tfstate")
+- `TF_LOCK_TIMEOUT`: Lock timeout duration (default: "300s")
+
+You can set these variables in your PowerShell session:
+
+```powershell
+$env:TF_STATE_RESOURCE_GROUP = "your-resource-group"
+$env:TF_STATE_STORAGE_ACCOUNT = "your-storage-account"
+```
+
+Or create a .env file in the root directory with these variables.
+
+## Initialize Terraform
+
+After setting the environment variables, run:
+
+```powershell
+# Process backend configuration
+./terraform/scripts/process-backend-config.ps1
+
+# Initialize Terraform
+terraform init -backend-config=terraform/backend.conf.local
+```
+
+## Managing State Locks
+
+If you encounter state lock issues, use the fix-terraform-lock script:
+
+```powershell
+./fix-terraform-lock.ps1 -Force
+```
 <!-- END_TF_DOCS -->

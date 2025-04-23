@@ -21,6 +21,12 @@ if (!(Test-Path "terraform/scripts/force-unlock-state.ps1")) {
     $scriptPath = "terraform/scripts"
 }
 
+# Map environment variables to state variables
+$env:STATE_SA = $env:TF_STATE_STORAGE_ACCOUNT
+$env:STATE_RG = $env:TF_STATE_RESOURCE_GROUP
+$env:STATE_CONTAINER = $env:TF_STATE_CONTAINER
+$env:STATE_KEY = $env:TF_STATE_KEY
+
 # Run the force-unlock script
 Write-Host "Running state lock cleanup script..." -ForegroundColor Yellow
 & "$scriptPath/force-unlock-state.ps1" -Force:$Force
