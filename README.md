@@ -703,4 +703,33 @@ scheduling = {
    - Schedule updates during office hours
    - Plan for emergency maintenance
    - Document schedule changes
-   - Monitor automation reliability 
+   - Monitor automation reliability
+
+## Troubleshooting
+
+### Terraform State Lock Issues
+
+If you encounter issues with Terraform hanging on "Acquiring state lock", there are several ways to fix it:
+
+1. **Quick Fix:** Run the included script to clear state locks
+   ```powershell
+   # Force clear any stuck state locks
+   .\fix-terraform-lock.ps1 -Force
+   
+   # Then run your Terraform commands with lock timeout specified
+   cd terraform/environments/prod
+   terraform plan -lock-timeout=300s -out=tfplan
+   ```
+
+2. **For CI/CD Pipelines:** The workflow has been updated to handle state locks by:
+   - Adding a dedicated step to clear locks before plan/apply operations
+   - Setting proper lock timeouts for all operations
+   - Ensuring cleanup of locks even when operations fail
+
+3. **Using the Terraform Wrapper:** For more controlled operations, use the included wrapper script
+   ```powershell
+   cd terraform/environments/prod
+   ../../scripts/tf-wrapper.ps1 -Action plan -LockTimeout 300
+   ```
+
+For more information, see the documentation in `terraform/scripts/README.md`. 

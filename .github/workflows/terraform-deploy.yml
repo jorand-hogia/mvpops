@@ -23,6 +23,8 @@ env:
   STATE_CONTAINER: ${{ secrets.STATE_CONTAINER }}
   STATE_KEY: ${{ secrets.STATE_KEY }}
   STATE_RG: ${{ secrets.STATE_RG }}
+  # Add lock timeout environment variable
+  TF_LOCK_TIMEOUT: "300s"
 
 jobs:
   verify-credentials:
@@ -93,9 +95,63 @@ jobs:
           terraform init -backend=false
           terraform validate -no-color
 
+  # Add a new job to clear any existing locks before running the plan
+  clear-locks:
+    name: 'Clear Terraform State Locks'
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./terraform/environments/prod
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: |
+            {
+              "clientId": "${{ secrets.AZURE_CLIENT_ID }}",
+              "clientSecret": "${{ secrets.AZURE_CLIENT_SECRET }}",
+              "subscriptionId": "${{ secrets.AZURE_SUBSCRIPTION_ID }}",
+              "tenantId": "${{ secrets.AZURE_TENANT_ID }}"
+            }
+      
+      - name: Clear existing state locks
+        run: |
+          # Format storage account name
+          STORAGE_ACCOUNT_NAME=$(echo "$STATE_SA" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g' | cut -c1-24)
+          STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "$STORAGE_ACCOUNT_NAME" --resource-group "$STATE_RG" --query "[0].value" -o tsv)
+          
+          # Check if lock file exists
+          echo "Checking for lock file..."
+          LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
+          
+          if [ "$LOCK_EXISTS" = "true" ]; then
+            echo "Lock file exists! Getting metadata..."
+            LOCK_METADATA=$(az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "properties.metadata" -o json)
+            LOCK_TIMESTAMP=$(echo "$LOCK_METADATA" | jq -r '.timestamp // empty')
+            LOCK_OWNER=$(echo "$LOCK_METADATA" | jq -r '.owner // empty')
+            
+            echo "Lock is owned by: $LOCK_OWNER"
+            echo "Lock was created at: $LOCK_TIMESTAMP"
+            
+            # Delete the lock
+            echo "Deleting lock file..."
+            az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
+            echo "Lock file deleted successfully!"
+          else
+            echo "No lock file found in the Azure Storage container."
+          fi
+
   plan:
     name: 'Plan Terraform Changes'
-    needs: validate
+    needs: clear-locks
     runs-on: ubuntu-latest
     environment: production
     
@@ -211,50 +267,6 @@ jobs:
               --auth-mode key \
               --account-key "$STORAGE_ACCOUNT_KEY"
           fi
-          
-          # Implement proper state locking mechanism
-          echo "Checking and managing state locks..."
-          LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
-          if [ "$LOCK_EXISTS" = "true" ]; then
-            echo "Lock file exists for state. Checking if it's stale..."
-            
-            # Get lock file metadata
-            LOCK_METADATA=$(az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "properties.metadata" -o json)
-            LOCK_TIMESTAMP=$(echo "$LOCK_METADATA" | jq -r '.timestamp // empty')
-            LOCK_OWNER=$(echo "$LOCK_METADATA" | jq -r '.owner // empty')
-            
-            if [ -n "$LOCK_TIMESTAMP" ]; then
-              # Check if lock is older than 1 hour (considered stale)
-              CURRENT_TIME=$(date +%s)
-              LOCK_TIME=$(date -d "$LOCK_TIMESTAMP" +%s)
-              LOCK_AGE=$((CURRENT_TIME - LOCK_TIME))
-              
-              if [ $LOCK_AGE -gt 3600 ]; then
-                echo "Lock is stale (over 1 hour old). Breaking the lock..."
-                az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
-              else
-                echo "Lock is active and owned by: $LOCK_OWNER"
-                echo "Lock was created at: $LOCK_TIMESTAMP"
-                echo "Waiting for lock to be released..."
-                exit 1
-              fi
-            else
-              echo "Lock file exists but has no metadata. Breaking the lock..."
-              az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
-            fi
-          fi
-          
-          # Create our own lock
-          echo "Creating new state lock..."
-          echo "{\"timestamp\":\"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",\"owner\":\"${GITHUB_WORKFLOW}-${GITHUB_RUN_ID}\"}" > lock.json
-          az storage blob upload \
-            --container-name "$STATE_CONTAINER" \
-            --name "${STATE_KEY}.lock" \
-            --file lock.json \
-            --account-name "$STORAGE_ACCOUNT_NAME" \
-            --auth-mode key \
-            --account-key "$STORAGE_ACCOUNT_KEY" \
-            --metadata timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" owner="${GITHUB_WORKFLOW}-${GITHUB_RUN_ID}"
 
       - name: Terraform Init
         run: |
@@ -273,12 +285,13 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan
+        run: terraform plan -no-color -out=tfplan -lock-timeout=$TF_LOCK_TIMEOUT
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan -lock-timeout=$TF_LOCK_TIMEOUT
 
+      # Clean up the lock in the "always" block to ensure it runs even if previous steps fail
       - name: Cleanup State Lock
         if: always()
         run: |
@@ -288,16 +301,9 @@ jobs:
           # Check if our lock still exists
           LOCK_EXISTS=$(az storage blob exists --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "exists" -o tsv)
           if [ "$LOCK_EXISTS" = "true" ]; then
-            # Verify it's our lock before deleting
-            LOCK_METADATA=$(az storage blob show --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY" --query "properties.metadata" -o json)
-            LOCK_OWNER=$(echo "$LOCK_METADATA" | jq -r '.owner // empty')
-            
-            if [ "$LOCK_OWNER" = "${GITHUB_WORKFLOW}-${GITHUB_RUN_ID}" ]; then
-              echo "Cleaning up our state lock..."
-              az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
-            else
-              echo "Warning: Lock exists but is owned by another process: $LOCK_OWNER"
-            fi
+            # Delete the lock without checking metadata
+            echo "Cleaning up any remaining state lock..."
+            az storage blob delete --container-name "$STATE_CONTAINER" --name "${STATE_KEY}.lock" --account-name "$STORAGE_ACCOUNT_NAME" --auth-mode key --account-key "$STORAGE_ACCOUNT_KEY"
           fi
 
       - name: Generate Terraform Documentation
